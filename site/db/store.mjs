@@ -61,6 +61,19 @@ export function makeStore(db) {
       );
     },
 
+    /**
+     * Record one request for `key` (a hashed IP) and report whether it is over the limit:
+     * more than `max` requests in the last `windowMs`. Old rows are cleaned up as we go.
+     */
+    async rateLimited(key, { max = 10, windowMs = 600_000 } = {}, now = new Date()) {
+      const hourAgo = new Date(now.getTime() - 3_600_000).toISOString();
+      const since = new Date(now.getTime() - windowMs).toISOString();
+      await db.run(`DELETE FROM rate_hits WHERE at < ?`, [hourAgo]);
+      await db.run(`INSERT INTO rate_hits (key, at) VALUES (?, ?)`, [key, now.toISOString()]);
+      const [row] = await db.all(`SELECT COUNT(*) AS n FROM rate_hits WHERE key = ? AND at >= ?`, [key, since]);
+      return Number(row?.n ?? 0) > max;
+    },
+
     /** GDPR retention: delete expired records. Run daily (cron) or from the admin CLI. */
     async purge(now = new Date()) {
       const at = now.toISOString();

@@ -7,6 +7,11 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
   // Only accept posts from our own pages (blocks other sites from submitting on a visitor's behalf).
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return json(403, { error: "Forbidden." });
+  const store = d1Store(env);
+  // 10 posts per 10 minutes per visitor, same as the local server.
+  if (await store.rateLimited(await ipKey(request, env))) {
+    return json(429, { error: "Too many messages in a short time. Please wait a few minutes, or call us." });
+  }
   const text = await request.text();
   if (text.length > 32_000) return json(413, { error: "That message is too long." });
   let body;
@@ -17,7 +22,7 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
   if (r.status !== 200) return json(r.status, { error: r.error, fields: r.fields });
   if (r.spam) return json(200, { message: "Thank you." });
 
-  const id = await d1Store(env).save(params.id, r.def, r.data);
+  const id = await store.save(params.id, r.def, r.data);
   // Optional alert email/SMS: set ALERT_WEBHOOK_URL (e.g. a Formspree or Make/Zapier webhook) in the Pages settings.
   // Only the form name and reference are sent, never the personal details.
   if (env.ALERT_WEBHOOK_URL) {
@@ -30,3 +35,16 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
 }
 
 export const onRequest = () => json(405, { error: "Method not allowed." });
+
+// Keyed hash of the visitor's IP, rotated daily, so the database never holds IP addresses.
+// Set RATE_LIMIT_SECRET (any long random text) in Pages → Settings → Variables and secrets;
+// without it the hash still works but is easier to reverse.
+async function ipKey(request, env) {
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const day = new Date().toISOString().slice(0, 10);
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(`${env.RATE_LIMIT_SECRET || "set-RATE_LIMIT_SECRET"}:${day}`),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(ip)));
+  return Array.from(sig.slice(0, 16), (b) => b.toString(16).padStart(2, "0")).join("");
+}

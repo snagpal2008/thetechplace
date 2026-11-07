@@ -34,3 +34,12 @@ CREATE TABLE IF NOT EXISTS condolences (
 );
 CREATE INDEX IF NOT EXISTS idx_condolences_notice ON condolences (notice, status, received_at);
 CREATE INDEX IF NOT EXISTS idx_condolences_queue  ON condolences (status, received_at);
+
+-- Rate limiting on Cloudflare (no shared memory there). Holds a keyed hash of the visitor's
+-- IP address (never the IP itself), rotated daily; rows are deleted after an hour.
+CREATE TABLE IF NOT EXISTS rate_hits (
+  key  TEXT NOT NULL,
+  at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rate_hits ON rate_hits (key, at);
+CREATE INDEX IF NOT EXISTS idx_rate_hits_at ON rate_hits (at);

@@ -73,3 +73,13 @@ test("validation: required fields, allow-lists, dates and spam traps", () => {
   assert.deepEqual(ok.data.extras, ["flowers", "music"]);
   assert.equal(validate("quote", { name: "A", email: "a@x.ie", funeral_type: "burial", coffin: "simple", extras: ["<script>"], consent: "yes", _ts: old }).status, 422);
 });
+
+test("rate limit: 10 posts per 10 minutes per key, then blocked; other keys unaffected", async () => {
+  const s = openStore(":memory:");
+  const t = new Date("2026-01-01T10:00:00Z");
+  for (let i = 0; i < 10; i++) assert.equal(await s.rateLimited("a", {}, new Date(t.getTime() + i * 1000)), false);
+  assert.equal(await s.rateLimited("a", {}, new Date(t.getTime() + 11_000)), true);
+  assert.equal(await s.rateLimited("b", {}, new Date(t.getTime() + 12_000)), false);
+  assert.equal(await s.rateLimited("a", {}, new Date(t.getTime() + 11 * 60_000)), false); // window passed
+  s.close();
+});

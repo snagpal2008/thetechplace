@@ -20,8 +20,9 @@
    - Build command: `node build.mjs`
    - Build output directory: `dist`
    - Environment variable: `NODE_VERSION` = `22`
-4. **Bind the database.** In the new Pages project, go to *Settings → Bindings → Add → D1 database*. Set the variable name to `DB` and the database to `funeral-db`. Save, then *Deployments → Retry deployment*.
-5. The site is live at **`https://<project-name>.pages.dev`**, and every merge to `master` redeploys it automatically.
+4. **Bind the database.** In the new Pages project, go to *Settings → Bindings → Add → D1 database*. Set the variable name to `DB` and the database to `funeral-db`.
+5. **Add the rate-limit secret.** Go to *Settings → Variables and secrets → Add*, type **Secret**, name `RATE_LIMIT_SECRET`, value: any long random text (for example, 40 random letters and numbers). It keys the hash used for per-visitor rate limiting, so visitors' IP addresses are never stored. Save, then *Deployments → Retry deployment*.
+6. The site is live at **`https://<project-name>.pages.dev`**, and every merge to `master` redeploys it automatically.
 
 ## Before you announce the site: alerts
 
@@ -46,7 +47,8 @@ There is deliberately **no admin web page** on the public site: no login means n
 
 ## Security settings to turn on (free)
 
-- *Security → WAF → Rate limiting rules:* 10 requests per minute per IP to `/api/forms/*`. The free plan includes one rule.
+- Per-visitor rate limiting (10 form posts per 10 minutes) is **built in**: it uses the `rate_hits` table, holds only a daily-rotated keyed hash of the IP address, and deletes entries after an hour. Set `RATE_LIMIT_SECRET` (step 5).
+- Optional extra: *Security → WAF → Rate limiting rules* (the free plan includes one rule) to stop floods before they reach the function.
 - *SSL/TLS:* "Full (strict)" and "Always use HTTPS" (on by default for `pages.dev`).
 - Optional later: **Cloudflare Turnstile** (free, no puzzles) on the condolence and newsletter forms if spam appears.
 - Security headers are already set in `site/src/_headers`.

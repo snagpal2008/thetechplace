@@ -13,6 +13,9 @@ import { FORMS } from "./forms.mjs";
 const store = openStore();
 const [cmd, arg, out] = process.argv.slice(2);
 const short = (s) => String(s).slice(0, 8);
+// Visitor text is printed to a staff terminal: remove control characters (incl. ANSI escape
+// sequences) so a message cannot recolour, hide or rewrite what staff see.
+const safe = (s) => String(s ?? "").replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, " ");
 
 switch (cmd) {
   case "queue": {
@@ -23,20 +26,20 @@ switch (cmd) {
       const d = JSON.parse(r.data);
       const who = d.name || d.caller_name || d.submitter_name || d.email || "";
       const late = r.respond_by < now ? "  ⚠ OVERDUE" : "";
-      console.log(`${short(r.id)}  ${r.form.padEnd(20)} respond by ${r.respond_by.slice(0, 16).replace("T", " ")}  ${r.owner}  ${who}${late}`);
+      console.log(`${short(r.id)}  ${r.form.padEnd(20)} respond by ${r.respond_by.slice(0, 16).replace("T", " ")}  ${r.owner}  ${safe(who)}${late}`);
     }
     break;
   }
   case "pending": {
     const rows = await store.pendingCondolences();
     if (!rows.length) console.log("No condolences waiting.");
-    for (const r of rows) console.log(`${short(r.id)}  [${r.notice}]  ${r.name}${r.town ? ", " + r.town : ""}: ${r.message}`);
+    for (const r of rows) console.log(`${short(r.id)}  [${safe(r.notice)}]  ${safe(r.name)}${r.town ? ", " + safe(r.town) : ""}: ${safe(r.message)}`);
     break;
   }
   case "approve":
   case "reject": {
     const n = await store.moderate(arg || "", cmd === "approve" ? "approved" : "rejected");
-    console.log(n ? `${cmd}d ${arg}` : "No single condolence matches that id (use at least 8 characters).");
+    console.log(n ? `${cmd === "approve" ? "Approved" : "Rejected"} ${arg}` :"No single condolence matches that id (use at least 8 characters).");
     process.exitCode = n ? 0 : 1;
     break;
   }
