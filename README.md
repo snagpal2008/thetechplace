@@ -18,7 +18,7 @@ Then double-click `site/dist-static/index.html`. Every page, image and link work
 
 ## Run it locally with working forms
 
-Requires Node 18+ (no npm packages needed) and, only to regenerate images, Python 3 with Pillow.
+Requires Node 22.5+ (no npm packages needed) and, only to regenerate images, Python 3 with Pillow.
 
 ```bash
 cd site
@@ -28,13 +28,19 @@ cd site
 npm start
 ```
 
-Then open http://localhost:8080. Form submissions are saved to `site/data/*.jsonl`, and the console logs who would be notified.
+Then open http://localhost:8080. Form submissions are saved in a SQLite database, `site/data/funeral.db` (Node's built-in SQLite, so no packages to install), and the console logs who would be notified.
 
 ```bash
-node moderate.mjs
+npm run admin -- queue
 ```
 
-lists condolence messages waiting for approval; `node moderate.mjs approve <id>` publishes one.
+Shows open requests, most urgent first. The other admin commands are `pending`, `approve <id>`, `reject <id>`, `export <form> [file.csv]` and `purge` (deletes data past its retention date).
+
+```bash
+npm test
+```
+
+Runs the database and validation tests.
 
 ## What's here
 
@@ -47,6 +53,7 @@ lists condolence messages waiting for approval; `node moderate.mjs approve <id>`
 | **D.** Sitemap and wireframes | [docs/05-sitemap-and-wireframes.md](docs/05-sitemap-and-wireframes.md) |
 | **E.** Images: shot list, rules, credits | [docs/06-images-shot-list.md](docs/06-images-shot-list.md), [site/IMAGE_CREDITS.md](site/IMAGE_CREDITS.md) |
 | **F.** Traffic plan: GBP, schema, keywords, speed, analytics | [docs/07-traffic-plan.md](docs/07-traffic-plan.md) |
+| Free hosting with working forms (Cloudflare Pages + D1 SQLite) | [docs/08-hosting.md](docs/08-hosting.md) |
 | The website (21 pages) | [site/src/](site/src/) |
 
 ## How the site is built
@@ -57,7 +64,10 @@ site/
   build.mjs            ← src/ → dist/: layout + partials + tokens + sitemap.xml
   server.mjs           ← static server + POST /api/forms/:id (validation, honeypot, rate limit)
   forms.mjs            ← form schemas: fields, validation, owner, SLA, retention
-  moderate.mjs         ← condolence moderation (local stand-in for Dílis)
+  admin.mjs            ← staff CLI: queue, moderation, CSV export, GDPR purge
+  db/                  ← schema.sql (SQLite / Cloudflare D1), store.mjs (shared queries), adapters
+  functions/           ← Cloudflare Pages Functions: the same forms API on D1
+  test/                ← node --test suites
   src/partials/        ← layout, head (FuneralHome JSON-LD), header, footer, consent, form guard
   src/assets/          ← style.css, main.js, generated WebP images
 tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
@@ -65,7 +75,8 @@ tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
 
 - **No frameworks, no web fonts, no third-party scripts by default.** Analytics loads only after cookie consent, and the map only on request.
 - **Quality checks run on this build:** Lighthouse mobile scored 100 for performance, accessibility, best practices and SEO on the 12 key pages; there were no console errors and no horizontal scroll at phone width; all form paths were tested end to end.
-- **Dílis hand-off:** replace the `appendFile` in `server.mjs → handleForm` with a POST to the Dílis intake API. The payload is already the validated record, with owner, SLA and retention.
+- **Going live for free:** Cloudflare Pages + D1. The same validation and SQL run there; see [docs/08-hosting.md](docs/08-hosting.md).
+- **Dílis hand-off:** add a POST to the Dílis intake API next to `store.save()` in `server.mjs` and `functions/api/forms/[id].js`.
 
 ## Before launch
 
@@ -74,4 +85,5 @@ tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
 - [ ] Replace placeholder story, team, reviews and images (see the shot list)
 - [ ] Privacy notice reviewed by a DPO; GA4 ID in `layout.html` (`data-ga`)
 - [ ] Check every support helpline and link
-- [ ] Connect the forms to Dílis; set up the email/SMS alerts and SLA escalation
+- [ ] Set up form alerts (`ALERT_WEBHOOK_URL`): the urgent forms promise a 15-minute call-back
+- [ ] Connect the forms to Dílis; set up SLA escalation

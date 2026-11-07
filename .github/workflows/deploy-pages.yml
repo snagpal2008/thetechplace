@@ -1,11 +1,10 @@
-# Publishes the website to GitHub Pages (free) on every push to master.
-# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# OPTIONAL fallback host: publishes a static copy to GitHub Pages (free). Forms do NOT work there.
+# The recommended free host is Cloudflare Pages + D1 (working forms): see docs/08-hosting.md.
+# To use: repo Settings → Pages → Source: "GitHub Actions", then Actions → this workflow → Run workflow.
 # Site URL: https://<user>.github.io/<repo>/  (custom domain: Settings → Pages → Custom domain)
 name: Deploy website to GitHub Pages
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 permissions:

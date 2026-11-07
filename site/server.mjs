@@ -1,19 +1,20 @@
 // Local development / demo server. No dependencies.
 //   node server.mjs            → http://localhost:8080
-// Serves dist/ and accepts form posts at POST /api/forms/:id, storing them as JSON
-// lines in data/ (gitignored). In production the same payloads go to the Dílis API.
+// Serves dist/ and accepts form posts at POST /api/forms/:id, storing them in a SQLite
+// database at data/funeral.db (gitignored). See db/schema.sql and admin.mjs.
 import { createServer } from "node:http";
-import { readFile, appendFile, mkdir, stat } from "node:fs/promises";
-import { join, extname, normalize, dirname } from "node:path";
+import { readFile, stat } from "node:fs/promises";
+import { join, extname, normalize, dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
-import { randomUUID } from "node:crypto";
 import { FORMS, validate } from "./forms.mjs";
+import { openStore } from "./db/sqlite-node.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
-const dataDir = join(root, "data");
 const PORT = Number(process.env.PORT) || 8080;
+const HOST = process.env.HOST || "127.0.0.1"; // local only by default; set HOST=0.0.0.0 to expose
+const store = openStore();
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".json": "application/json", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml", ".webp": "image/webp",
@@ -26,16 +27,18 @@ const SECURITY = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "X-Frame-Options": "DENY"
 };
-// JSON-LD blocks are data, not script, so CSP does not block them; drop the placeholder hash.
-SECURITY["Content-Security-Policy"] = SECURITY["Content-Security-Policy"].replace("", "");
-
-// Simple per-IP rate limit for form posts: 10 per 10 minutes.
+// Simple per-IP rate limit for form posts: 10 per 10 minutes. Old entries are swept so the
+// map cannot grow without bound.
 const hits = new Map();
 const limited = (ip) => {
   const now = Date.now(), list = (hits.get(ip) || []).filter((t) => now - t < 600_000);
   list.push(now); hits.set(ip, list);
   return list.length > 10;
 };
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, list] of hits) if (!list.some((t) => now - t < 600_000)) hits.delete(ip);
+}, 60_000).unref();
 
 const send = (res, status, body, headers = {}) => { res.writeHead(status, { ...SECURITY, ...headers }); res.end(body); };
 const json = (res, status, obj) => send(res, status, JSON.stringify(obj), { "Content-Type": "application/json", "Cache-Control": "no-store" });
@@ -46,31 +49,27 @@ async function readBody(req, limit = 32_000) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-async function readJsonl(file) {
-  try { return (await readFile(file, "utf8")).split("\n").filter(Boolean).map((l) => JSON.parse(l)); } catch { return []; }
-}
-
 async function handleForm(req, res, id) {
+  if (!/^application\/json\b/i.test(req.headers["content-type"] || "")) return json(res, 415, { error: "Unsupported form encoding." });
   const ip = req.socket.remoteAddress || "";
   if (limited(ip)) return json(res, 429, { error: "Too many messages in a short time. Please wait a few minutes." });
   let body;
   try { body = JSON.parse(await readBody(req)); } catch (e) { return json(res, e.status || 400, { error: "We could not read that form." }); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return json(res, 400, { error: "We could not read that form." });
   const r = validate(id, body);
   if (r.status !== 200) return json(res, r.status, { error: r.error, fields: r.fields });
   if (r.spam) return json(res, 200, { message: "Thank you." }); // never reveal the trap
-  const record = { id: randomUUID(), form: id, received: new Date().toISOString(), status: r.def.moderated ? "pending" : "new",
-    owner: r.def.owner, slaHours: r.def.slaHours, retention: r.def.retention, data: r.data };
-  await mkdir(dataDir, { recursive: true });
-  await appendFile(join(dataDir, `${id}.jsonl`), JSON.stringify(record) + "\n");
-  // Stand-in for email/SMS: in production → Dílis webhook (see docs/04-workflows.md)
-  console.log(`[form] ${r.def.title} → notify ${r.def.notify.join(", ")} · owner: ${r.def.owner} · SLA ${r.def.slaHours}h · ${record.id}`);
-  return json(res, 200, { ok: true, message: r.def.message, reference: record.id.slice(0, 8).toUpperCase() });
+  const recordId = await store.save(id, r.def, r.data);
+  // Stand-in for email/SMS alerts (see docs/04-form-workflows.md). Logs no personal data.
+  console.log(`[form] ${r.def.title} → notify ${r.def.notify.join(", ")} · owner: ${r.def.owner} · SLA ${r.def.slaHours}h · ${recordId}`);
+  return json(res, 200, { ok: true, message: r.def.message, reference: recordId.slice(0, 8).toUpperCase() });
 }
 
 async function serveStatic(req, res, urlPath) {
-  let p = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[/\\])+/, "");
+  let p;
+  try { p = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[/\\])+/, ""); } catch { return send(res, 400, "Bad request"); }
   let file = join(dist, p);
-  if (!file.startsWith(dist)) return send(res, 403, "Forbidden");
+  if (file !== dist && !file.startsWith(dist + sep)) return send(res, 403, "Forbidden");
   try { if ((await stat(file)).isDirectory()) file = join(file, "index.html"); }
   catch { if (!extname(file)) file = join(file, "index.html"); }
   try {
@@ -94,11 +93,8 @@ createServer(async (req, res) => {
     const m = url.pathname.match(/^\/api\/forms\/([\w-]+)$/);
     if (m && req.method === "POST") return await handleForm(req, res, m[1]);
     if (url.pathname === "/api/condolences" && req.method === "GET") {
-      const notice = url.searchParams.get("notice");
-      const items = (await readJsonl(join(dataDir, "condolence.jsonl")))
-        .filter((c) => c.status === "approved" && c.data.notice === notice)
-        .map((c) => ({ name: c.data.name, town: c.data.town, message: c.data.message, date: c.received.slice(0, 10) }));
-      return json(res, 200, items);
+      const notice = (url.searchParams.get("notice") || "").slice(0, 120);
+      return json(res, 200, notice ? await store.approvedCondolences(notice) : []);
     }
     if (url.pathname.startsWith("/api/")) return json(res, 404, { error: "Not found" });
     if (!["GET", "HEAD"].includes(req.method)) return send(res, 405, "Method not allowed");
@@ -106,4 +102,4 @@ createServer(async (req, res) => {
   } catch (e) {
     console.error(e); json(res, 500, { error: "Something went wrong on our side." });
   }
-}).listen(PORT, () => console.log(`Serving dist/ on http://localhost:${PORT} · forms: ${Object.keys(FORMS).join(", ")}`));
+}).listen(PORT, HOST, () => console.log(`Serving dist/ on http://localhost:${PORT} · database: ${store.path} · forms: ${Object.keys(FORMS).join(", ")}`));

@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Mobile-first website for an Irish family funeral director. Static pages + dependency-free form API.",
+  "description": "Mobile-first website for an Irish family funeral director. Static pages + dependency-free form API with SQLite storage.",
   "scripts": {
     "images": "python3 ../tools/generate-images.py",
     "build": "node build.mjs",
     "build:static": "node build.mjs --static",
-    "start": "node build.mjs && node server.mjs",
-    "moderate": "node moderate.mjs"
+    "start": "node build.mjs && node --disable-warning=ExperimentalWarning server.mjs",
+    "admin": "node --disable-warning=ExperimentalWarning admin.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.mjs\""
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=22.5"
+  }
 }
