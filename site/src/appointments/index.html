@@ -1,0 +1,39 @@
+<!--title: Book an Appointment | {{shortName}}, {{town}}-->
+<!--description: Book a time to meet a funeral director in {{town}} or {{branch2Town}}, at your home, or by video: to arrange a funeral, plan ahead, visit, or collect ashes.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Appointments</p>
+    <h1>Book an appointment</h1>
+    <p class="lead">Choose a day and time that suits you. We will confirm by phone or email within 4 working hours. If you need to see us sooner, please call <a href="tel:{{phoneIntl}}">{{phone}}</a>.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="appointment" action="/api/forms/appointment" method="post">
+      <!--#include form-guard-->
+      <div class="field-row">
+        <div class="field"><label for="ap-name">Your name</label><input id="ap-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+        <div class="field"><label for="ap-phone">Phone</label><input id="ap-phone" name="phone" type="tel" autocomplete="tel" required pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+      </div>
+      <div class="field"><label for="ap-email">Email</label><input id="ap-email" name="email" type="email" autocomplete="email" required></div>
+      <div class="field-row">
+        <div class="field"><label for="ap-type">What is the appointment for?</label>
+          <select id="ap-type" name="appointment_type" required><option value="">Please choose</option><option value="arrange">Arranging a funeral</option><option value="preplan">Planning ahead</option><option value="viewing">Visiting someone in our care</option><option value="collect-ashes">Collecting ashes</option><option value="other">Something else</option></select></div>
+        <div class="field"><label for="ap-loc">Where?</label>
+          <select id="ap-loc" name="location" required><option value="">Please choose</option><option value="main">{{town}} funeral home</option><option value="branch2">{{branch2Town}} branch</option><option value="home">At my home</option><option value="video">Video call</option></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="ap-date">Preferred date</label><input id="ap-date" name="date" type="date" required data-future data-range-msg="Please choose a date from tomorrow onwards. For today, please call us."></div>
+        <div class="field"><label for="ap-time">Preferred time</label>
+          <select id="ap-time" name="time_slot" required><option value="">Please choose</option><option value="09:30">9:30 am</option><option value="11:00">11:00 am</option><option value="12:30">12:30 pm</option><option value="14:30">2:30 pm</option><option value="16:00">4:00 pm</option></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="ap-n">How many people will come? <span class="opt">(optional)</span></label><input id="ap-n" name="attendees" type="number" min="1" max="20" inputmode="numeric"></div>
+        <div class="field"><label for="ap-acc">Access or language needs <span class="opt">(optional)</span></label><input id="ap-acc" name="access_needs" type="text" maxlength="500" placeholder="e.g. wheelchair, interpreter"></div>
+      </div>
+      <div class="field"><label for="ap-msg">Anything else <span class="opt">(optional)</span></label><textarea id="ap-msg" name="message" maxlength="1000" style="min-height:5rem"></textarea></div>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Request appointment</button></div>
+    </form>
+  </div>
+</section>

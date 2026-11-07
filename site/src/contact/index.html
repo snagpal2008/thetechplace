@@ -1,0 +1,54 @@
+<!--title: Contact Us: 24-Hour Funeral Directors, {{town}} | {{shortName}}-->
+<!--description: Contact {{name}} day or night on {{phone247}}. Branches in {{town}} and {{branch2Town}}, opening hours, map and directions, or request a call-back.-->
+<section class="block alt">
+  <div class="wrap">
+    <p class="eyebrow">Contact us</p>
+    <h1>Talk to us, any time</h1>
+    <p class="lead narrow">Whatever the hour, a member of our team will answer. If you would prefer us to call you, leave your number below.</p>
+    <div class="grid grid-3" style="margin-top:1.5rem">
+      <div class="panel-urgent"><h2 style="font-size:1.25rem">24-hour line</h2><p>When someone has died, at any time</p><a class="btn btn-light" href="tel:{{phone247Intl}}">{{phone247}}</a></div>
+      <div class="card"><h2 style="font-size:1.25rem">Office</h2><p><a href="tel:{{phoneIntl}}">{{phone}}</a><br><a href="mailto:{{email}}">{{email}}</a></p><p class="small muted">We reply to emails within one working day.</p></div>
+      <div class="card"><h2 style="font-size:1.25rem">Visit us</h2><p>Please call ahead so that someone is free to sit with you.</p><a class="more" href="/appointments/">Book an appointment</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="callback" aria-labelledby="cb-title">
+  <div class="wrap grid grid-2" style="align-items:start">
+    <div>
+      <h2 id="cb-title">Request a call-back</h2>
+      <p>Leave your name and number, and we will phone you back. For anything to do with a death, we aim to call back within 15 minutes, day or night.</p>
+      <form class="form" data-form="callback" action="/api/forms/callback" method="post">
+        <!--#include form-guard-->
+        <div class="field"><label for="cb-name">Your name</label><input id="cb-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+        <div class="field"><label for="cb-phone">Phone number</label><input id="cb-phone" name="phone" type="tel" autocomplete="tel" required pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+        <div class="field"><label for="cb-reason">What is it about?</label>
+          <select id="cb-reason" name="reason" required><option value="">Please choose</option><option value="death">Someone has died</option><option value="arranging">Arranging a funeral</option><option value="preplanning">Planning ahead</option><option value="notice">A funeral notice</option><option value="other">Something else</option></select></div>
+        <div class="field"><label for="cb-time">When is best to call? <span class="opt">(optional)</span></label>
+          <select id="cb-time" name="best_time"><option value="asap">As soon as possible</option><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select></div>
+        <div class="field"><label for="cb-msg">Message <span class="opt">(optional)</span></label><textarea id="cb-msg" name="message" maxlength="1000" style="min-height:5rem"></textarea></div>
+        <!--#include consent-->
+        <div><button class="btn" type="submit">Please call me back</button></div>
+      </form>
+    </div>
+    <div id="branches">
+      <h2>Our funeral homes</h2>
+      <div class="card" style="margin-bottom:1.25rem">
+        <h3>{{town}} (main funeral home)</h3>
+        <p>{{street}}, {{town}}, {{countyFull}}, {{eircode}}</p>
+        <table class="small"><caption class="visually-hidden">Opening hours, {{town}}</caption>
+          <tbody><tr><th scope="row">Mon – Fri</th><td>{{hoursWeekday}}</td></tr><tr><th scope="row">Saturday</th><td>{{hoursSaturday}}</td></tr><tr><th scope="row">Sunday</th><td>By appointment</td></tr><tr><th scope="row">Phone</th><td>24 hours, every day</td></tr></tbody></table>
+        <p class="small" style="margin-top:.8rem">Free parking at the rear. Step-free access and an accessible toilet.</p>
+        <div class="map-consent" data-map="{{lat}},{{lng}}" data-title="Map showing {{name}}, {{town}}">
+          <div><p class="small">The map is provided by OpenStreetMap and loads only if you ask for it.</p><button class="btn" type="button">Show map</button></div>
+        </div>
+        <p class="small" style="margin-top:.6rem"><a href="https://www.openstreetmap.org/?mlat={{lat}}&amp;mlon={{lng}}#map=17/{{lat}}/{{lng}}" rel="noopener">Get directions</a></p>
+      </div>
+      <div class="card">
+        <h3>{{branch2Town}} (branch)</h3>
+        <p>{{branch2Street}}, {{branch2Town}}, {{countyFull}}</p>
+        <p class="small">Open by appointment. The same 24-hour number reaches us: <a href="tel:{{phone247Intl}}">{{phone247}}</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>

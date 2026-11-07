@@ -1,0 +1,14 @@
+{
+  "name": "funeral-home-website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mobile-first website for an Irish family funeral director. Static pages + dependency-free form API.",
+  "scripts": {
+    "images": "python3 ../tools/generate-images.py",
+    "build": "node build.mjs",
+    "start": "node build.mjs && node server.mjs",
+    "moderate": "node moderate.mjs"
+  },
+  "engines": { "node": ">=18" }
+}

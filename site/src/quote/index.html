@@ -1,0 +1,48 @@
+<!--title: Request a Funeral Quote: {{town}}, {{countyFull}} | {{shortName}}-->
+<!--description: Ask {{name}} for a written, itemised funeral quote for burial, cremation or direct cremation. We reply within one working day.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Prices</p>
+    <h1>Request a written quote</h1>
+    <p class="lead">Choose the options you are considering and we will email an itemised estimate within one working day, showing our fees and third-party costs separately.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="quote" action="/api/forms/quote" method="post">
+      <!--#include form-guard-->
+      <div class="field-row">
+        <div class="field"><label for="q-name">Your name</label><input id="q-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+        <div class="field"><label for="q-email">Email</label><input id="q-email" name="email" type="email" autocomplete="email" required></div>
+      </div>
+      <div class="field"><label for="q-phone">Phone <span class="opt">(optional)</span></label><input id="q-phone" name="phone" type="tel" autocomplete="tel" pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+      <fieldset>
+        <legend>Type of funeral</legend>
+        <label class="choice"><input type="radio" name="funeral_type" value="burial" required> Traditional funeral and burial</label>
+        <label class="choice"><input type="radio" name="funeral_type" value="cremation"> Funeral service and cremation</label>
+        <label class="choice"><input type="radio" name="funeral_type" value="direct-cremation"> Direct cremation</label>
+      </fieldset>
+      <div class="field"><label for="q-coffin">Coffin</label>
+        <select id="q-coffin" name="coffin" required><option value="">Please choose</option><option value="simple">Simple</option><option value="traditional">Traditional veneer</option><option value="premium">Solid wood</option><option value="eco">Eco (wicker, willow, cardboard)</option><option value="advice">Please advise me</option></select></div>
+      <fieldset>
+        <legend>Include in the quote <span class="opt">(optional)</span></legend>
+        <label class="choice"><input type="checkbox" name="extras" value="embalming"> Embalming and reposing</label>
+        <label class="choice"><input type="checkbox" name="extras" value="limousine"> Limousine</label>
+        <label class="choice"><input type="checkbox" name="extras" value="flowers"> Flowers</label>
+        <label class="choice"><input type="checkbox" name="extras" value="notice-paper"> Newspaper notice</label>
+        <label class="choice"><input type="checkbox" name="extras" value="stationery"> Printed booklets or memorial cards</label>
+        <label class="choice"><input type="checkbox" name="extras" value="music"> Music</label>
+        <label class="choice"><input type="checkbox" name="extras" value="livestream"> Live-stream</label>
+        <label class="choice"><input type="checkbox" name="extras" value="catering"> Catering after the funeral</label>
+      </fieldset>
+      <div class="field-row">
+        <div class="field"><label for="q-cer">Where would the ceremony be? <span class="opt">(optional)</span></label>
+          <select id="q-cer" name="ceremony"><option value="">Not sure</option><option value="church">Church</option><option value="crematorium">Crematorium chapel</option><option value="funeral-home">Our chapel</option><option value="graveside">At the graveside</option><option value="none">No ceremony</option></select></div>
+        <div class="field"><label for="q-loc">Cemetery, crematorium or town <span class="opt">(optional)</span></label><input id="q-loc" name="location" type="text" maxlength="120"></div>
+      </div>
+      <div class="field"><label for="q-msg">Anything else <span class="opt">(optional)</span></label><textarea id="q-msg" name="message" maxlength="1500"></textarea></div>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Request my quote</button></div>
+    </form>
+  </div>
+</section>

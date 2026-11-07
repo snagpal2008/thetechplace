@@ -1,0 +1,48 @@
+<!--title: Submit a Death Notice | {{shortName}}, {{town}}-->
+<!--description: Send us the details for a death notice. We check every notice with the family before publishing it on our website, on RIP.ie and in local papers.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Funeral notices</p>
+    <h1>Submit a death notice</h1>
+    <p class="lead">Send us the details and we will prepare the notice for you. We will phone you to read it back before anything is published.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="death-notice" action="/api/forms/death-notice" method="post">
+      <!--#include form-guard-->
+      <fieldset>
+        <legend>Your details</legend>
+        <div class="field-row">
+          <div class="field"><label for="dn-sname">Your name</label><input id="dn-sname" name="submitter_name" type="text" autocomplete="name" required maxlength="100"></div>
+          <div class="field"><label for="dn-rel">Relationship to the person who died</label><input id="dn-rel" name="relationship" type="text" required maxlength="60"></div>
+        </div>
+        <div class="field-row" style="margin-top:1rem">
+          <div class="field"><label for="dn-phone">Phone</label><input id="dn-phone" name="submitter_phone" type="tel" autocomplete="tel" required pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+          <div class="field"><label for="dn-email">Email</label><input id="dn-email" name="submitter_email" type="email" autocomplete="email" required></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>The notice</legend>
+        <div class="field-row">
+          <div class="field"><label for="dn-name">Full name of the person who died, including née</label><input id="dn-name" name="deceased_name" type="text" required maxlength="120"></div>
+          <div class="field"><label for="dn-town">Their address or town</label><input id="dn-town" name="deceased_town" type="text" required maxlength="120"></div>
+        </div>
+        <div class="field" style="margin-top:1rem"><label for="dn-date">Date of death</label><input id="dn-date" name="date_of_death" type="date" required data-no-future data-range-msg="The date cannot be in the future."></div>
+        <div class="field" style="margin-top:1rem"><label for="dn-text">Notice wording</label><textarea id="dn-text" name="notice_text" required maxlength="3000"></textarea><p class="hint">For example: “Peacefully, at home… beloved wife of… sadly missed by…”. We are happy to help you with the wording.</p></div>
+        <div class="field" style="margin-top:1rem"><label for="dn-repose">Reposing details <span class="opt">(optional)</span></label><textarea id="dn-repose" name="reposing" maxlength="600" style="min-height:5rem"></textarea></div>
+        <div class="field" style="margin-top:1rem"><label for="dn-svc">Funeral Mass or service, burial or cremation <span class="opt">(optional)</span></label><textarea id="dn-svc" name="service" maxlength="600" style="min-height:5rem"></textarea></div>
+        <div class="field" style="margin-top:1rem"><label for="dn-don">Donations in lieu of flowers <span class="opt">(optional)</span></label><input id="dn-don" name="donations" type="text" maxlength="300"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Where should it appear? <span class="opt">(optional)</span></legend>
+        <label class="choice"><input type="checkbox" name="channels" value="website" checked> Our website</label>
+        <label class="choice"><input type="checkbox" name="channels" value="ripie" checked> RIP.ie <span class="muted">(a fee applies)</span></label>
+        <label class="choice"><input type="checkbox" name="channels" value="newspaper"> Local newspaper <span class="muted">(a fee applies)</span></label>
+      </fieldset>
+      <label class="choice consent"><input type="checkbox" name="family_approved" value="yes" required> <span>I confirm that the immediate family has agreed to this notice being published.</span></label>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Send notice for checking</button></div>
+    </form>
+  </div>
+</section>
