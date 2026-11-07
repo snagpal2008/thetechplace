@@ -1,4 +1,3 @@
 User-agent: *
-Allow: /
-Disallow: /api/
+{{robotsRule}}
 Sitemap: {{domain}}/sitemap.xml

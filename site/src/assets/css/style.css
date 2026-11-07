@@ -207,3 +207,4 @@ details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: .8r
 
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 @media print { .topbar, .site-header, .callbar, .cookie, .site-footer, form { display: none !important; } body { background: #fff; } }
+.preview-banner { background: #fbf6ec; color: var(--ink); border-bottom: 1px solid var(--line); text-align: center; font-size: .85rem; padding: .35rem 1rem; }

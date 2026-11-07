@@ -1,5 +1,6 @@
 {
-  "_comment": "Every {{token}} in src/ is filled from this file at build time. Replace the SAMPLE values below with the funeral home's real details before launch.",
+  "_comment": "Every {{token}} in src/ is filled from this file at build time. Replace the SAMPLE values with the funeral home's real details, then set preview to \"false\" to let search engines list the site.",
+  "preview": "true",
   "name": "Hawthorn Family Funeral Directors",
   "shortName": "Hawthorn Funerals",
   "town": "Naas",

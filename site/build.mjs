@@ -11,6 +11,12 @@ const src = join(root, "src");
 const STATIC = process.argv.includes("--static");
 const dist = join(root, STATIC ? "dist-static" : "dist");
 const config = JSON.parse(readFileSync(join(root, "config.json"), "utf8"));
+// Preview mode: while the details are still samples, keep the site out of search engines and say so on every page.
+const PREVIEW = String(config.preview) !== "false";
+config.robotsMeta = PREVIEW ? '<meta name="robots" content="noindex, nofollow">' : "";
+config.robotsRule = PREVIEW ? "Disallow: /" : "Allow: /\nDisallow: /api/";
+config.previewBanner = PREVIEW
+  ? '<div class="preview-banner" role="note">Preview website: names, phone numbers and prices are samples, not a real funeral home.</div>' : "";
 
 const fill = (text) =>
   text.replace(/\{\{(\w+)\}\}/g, (m, key) => {

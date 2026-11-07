@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { FORMS, validate } from "./forms.mjs";
 import { openStore } from "./db/sqlite-node.mjs";
+import { alertPayload, sendAlert } from "./alerts.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
@@ -60,8 +61,10 @@ async function handleForm(req, res, id) {
   if (r.status !== 200) return json(res, r.status, { error: r.error, fields: r.fields });
   if (r.spam) return json(res, 200, { message: "Thank you." }); // never reveal the trap
   const recordId = await store.save(id, r.def, r.data);
-  // Stand-in for email/SMS alerts (see docs/04-form-workflows.md). Logs no personal data.
-  console.log(`[form] ${r.def.title} → notify ${r.def.notify.join(", ")} · owner: ${r.def.owner} · SLA ${r.def.slaHours}h · ${recordId}`);
+  // Alert email via ALERT_WEBHOOK_URL (tools/gmail-alert.gs), if set. The log line holds no personal data.
+  const alerted = process.env.ALERT_WEBHOOK_URL && id !== "condolence"
+    ? await sendAlert(process.env.ALERT_WEBHOOK_URL, alertPayload(id, r.def, r.data, recordId)) : null;
+  console.log(`[form] ${r.def.title} · owner: ${r.def.owner} · SLA ${r.def.slaHours}h · ${recordId}${alerted === null ? " · no alert configured" : alerted ? " · alert sent" : " · ALERT FAILED"}`);
   return json(res, 200, { ok: true, message: r.def.message, reference: recordId.slice(0, 8).toUpperCase() });
 }
 

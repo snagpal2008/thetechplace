@@ -24,12 +24,15 @@
 5. **Add the rate-limit secret.** Go to *Settings → Variables and secrets → Add*, type **Secret**, name `RATE_LIMIT_SECRET`, value: any long random text (for example, 40 random letters and numbers). It keys the hash used for per-visitor rate limiting, so visitors' IP addresses are never stored. Save, then *Deployments → Retry deployment*.
 6. The site is live at **`https://<project-name>.pages.dev`**, and every merge to `master` redeploys it automatically.
 
-## Before you announce the site: alerts
+## Form alerts to Gmail (free)
 
-The site stores every form in the database, but **nobody is told when a form arrives** until you set up an alert. That matters most for "Someone has died" and urgent call-backs, which promise a call back within 15 minutes.
+Every form except condolences sends an email to **snagpal2008@gmail.com** through a small Google Apps Script that runs under that Gmail account (`tools/gmail-alert.gs`; the setup steps are at the top of that file):
 
-- **Free option:** create a Formspree form (free tier) or a Make or Zapier webhook that emails or texts the on-call phone. In Pages *Settings → Variables and secrets*, add `ALERT_WEBHOOK_URL` = that URL. Each alert contains only the form name, the owner, the response time and the reference. Staff then read the details in the database.
-- **Until alerts are working,** keep the phone number as the main call to action (it already is), and check the queue regularly.
+- **Urgent forms** (someone has died, call-back requests) get a 🔴 subject line with the caller's **name and phone**, so you can ring back within 15 minutes.
+- Other forms include the name, contact details and reference. Free-text messages are **not** emailed: read them in the database.
+- The script checks a secret key in its URL, so nobody else can send emails through it.
+- Set the script's URL (including `?key=…`) as the Pages secret `ALERT_WEBHOOK_URL`.
+- Tip: in the Gmail app, give the "Website alerts" sender its own notification sound, so urgent forms are heard at night.
 
 ## Day-to-day admin
 
