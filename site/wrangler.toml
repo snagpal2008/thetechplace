@@ -14,7 +14,7 @@ not_found_handling = "404-page"
 binding = "DB"
 database_name = "funeral-db"
 # Paste the "Database ID" shown on your D1 database's page in the Cloudflare dashboard:
-database_id = "REPLACE-with-your-D1-database-id"
+database_id = "8e818faa-e70e-4ba7-aded-e1bcf882dabb"
 
 [observability]
 enabled = true
