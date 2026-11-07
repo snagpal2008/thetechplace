@@ -10,8 +10,8 @@
  *     "Advanced" → "Go to … (unsafe)" → Allow. It only gets permission to send email as you.)
  *  4. Copy the Web app URL and add your key on the end:
  *       https://script.google.com/macros/s/XXXXXXXX/exec?key=YOUR-KEY
- *     That whole address is ALERT_WEBHOOK_URL. Put it in Cloudflare Pages → Settings →
- *     Variables and secrets (type: Secret), or give it to Claude to set.
+ *     That whole address is ALERT_WEBHOOK_URL. Put it in Cloudflare → your Worker → Settings →
+ *     Variables and Secrets (type: Secret), or give it to Claude to set.
  *  5. Test: run the function testAlert() from the editor. You should get an email.
  *
  * "Anyone" access is needed so the website can call it; the KEY stops anyone else from using it.

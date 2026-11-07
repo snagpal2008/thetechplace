@@ -35,7 +35,7 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
 export const onRequest = () => json(405, { error: "Method not allowed." });
 
 // Keyed hash of the visitor's IP, rotated daily, so the database never holds IP addresses.
-// Set RATE_LIMIT_SECRET (any long random text) in Pages → Settings → Variables and secrets;
+// Set RATE_LIMIT_SECRET (any long random text) in the Worker → Settings → Variables and Secrets;
 // without it the hash still works but is easier to reverse.
 async function ipKey(request, env) {
   const ip = request.headers.get("cf-connecting-ip") || "unknown";

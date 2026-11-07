@@ -53,7 +53,7 @@ Runs the database and validation tests.
 | **D.** Sitemap and wireframes | [docs/05-sitemap-and-wireframes.md](docs/05-sitemap-and-wireframes.md) |
 | **E.** Images: shot list, rules, credits | [docs/06-images-shot-list.md](docs/06-images-shot-list.md), [site/IMAGE_CREDITS.md](site/IMAGE_CREDITS.md) |
 | **F.** Traffic plan: GBP, schema, keywords, speed, analytics | [docs/07-traffic-plan.md](docs/07-traffic-plan.md) |
-| Free hosting with working forms (Cloudflare Pages + D1 SQLite) | [docs/08-hosting.md](docs/08-hosting.md) |
+| Free hosting with working forms (Cloudflare Workers + D1 SQLite) | [docs/08-hosting.md](docs/08-hosting.md) |
 | The website (21 pages) | [site/src/](site/src/) |
 
 ## How the site is built
@@ -66,7 +66,7 @@ site/
   forms.mjs            ← form schemas: fields, validation, owner, SLA, retention
   admin.mjs            ← staff CLI: queue, moderation, CSV export, GDPR purge
   db/                  ← schema.sql (SQLite / Cloudflare D1), store.mjs (shared queries), adapters
-  functions/           ← Cloudflare Pages Functions: the same forms API on D1
+  worker.js, functions/ ← Cloudflare Worker: the same forms API on D1
   test/                ← node --test suites
   src/partials/        ← layout, head (FuneralHome JSON-LD), header, footer, consent, form guard
   src/assets/          ← style.css, main.js, generated WebP images
@@ -75,7 +75,7 @@ tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
 
 - **No frameworks, no web fonts, no third-party scripts by default.** Analytics loads only after cookie consent, and the map only on request.
 - **Quality checks run on this build:** Lighthouse mobile scored 100 for performance, accessibility, best practices and SEO on the 12 key pages; there were no console errors and no horizontal scroll at phone width; all form paths were tested end to end.
-- **Going live for free:** Cloudflare Pages + D1. The same validation and SQL run there; see [docs/08-hosting.md](docs/08-hosting.md).
+- **Going live for free:** Cloudflare Workers + D1. The same validation and SQL run there; see [docs/08-hosting.md](docs/08-hosting.md).
 - **Dílis hand-off:** add a POST to the Dílis intake API next to `store.save()` in `server.mjs` and `functions/api/forms/[id].js`.
 
 ## Before launch

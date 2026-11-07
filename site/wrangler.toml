@@ -1,9 +1,20 @@
-# Cloudflare Pages + D1 (free tier). Setup steps: docs/08-hosting.md
+# Cloudflare Workers + static assets (free plan). Setup steps: docs/08-hosting.md
+# Dashboard build settings:  Root directory: site · Build command: node build.mjs · Deploy command: npx wrangler deploy
 name = "funeral-website"
-pages_build_output_dir = "dist"
+main = "worker.js"
 compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "funeral-db"
-database_id = "REPLACE-with-the-id-printed-by-wrangler-d1-create"
+# Paste the "Database ID" shown on your D1 database's page in the Cloudflare dashboard:
+database_id = "REPLACE-with-your-D1-database-id"
+
+[observability]
+enabled = true
