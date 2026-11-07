@@ -1,6 +1,6 @@
 # Cloudflare Workers + static assets (free plan). Setup steps: docs/08-hosting.md
 # Dashboard build settings:  Root directory: site · Build command: node build.mjs · Deploy command: npx wrangler deploy
-name = "funeral-website"
+name = "thetechplace"   # must match the Worker name in the Cloudflare dashboard
 main = "worker.js"
 compatibility_date = "2025-01-01"
 

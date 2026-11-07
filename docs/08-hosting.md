@@ -16,7 +16,7 @@
 2. **Create the database.** Go to *Storage & Databases → D1 SQL Database → Create*, name it `funeral-db`, and create it. Open its **Console** tab, paste the whole of `site/db/schema.sql`, and click *Execute*.
 3. **Copy the database ID.** It is shown on the database's page (a long code like `1a2b3c4d-…`). Put it in `site/wrangler.toml` as `database_id = "…"` and commit it. The ID is not a secret.
 4. **Connect the site.** Go to *Workers & Pages → Create application → Import a repository*, choose GitHub and `snagpal2008/thetechplace`, and enter:
-   - Project name: e.g. `funeral-website` (this becomes the web address)
+   - Project name: `thetechplace` (must match `name` in `site/wrangler.toml`; it becomes the web address)
    - Build command: `node build.mjs`
    - Deploy command: `npx wrangler deploy` (the default)
    - *Advanced settings* → Path / Root directory: `site`
@@ -24,7 +24,7 @@
 
    Then click *Deploy*. The D1 database is connected automatically from `wrangler.toml`.
 5. **Add the rate-limit secret.** In the Worker, go to *Settings → Variables and Secrets → Add*, type **Secret**, name `RATE_LIMIT_SECRET`, value: any long random text (for example, 40 random letters and numbers). It keys the hash used for per-visitor rate limiting, so visitors' IP addresses are never stored.
-6. The site is live at **`https://funeral-website.<your-subdomain>.workers.dev`** (shown on the Worker's page), and every merge to `master` redeploys it automatically.
+6. The site is live at **`https://thetechplace.<your-subdomain>.workers.dev`** (shown on the Worker's page), and every merge to `master` redeploys it automatically.
 
 **"Could not detect a directory containing static files"** means either the code is not on `master` yet (merge the PR) or the root directory was not set to `site`.
 
