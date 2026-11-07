@@ -1,0 +1,28 @@
+<!--title: Grief-Support Letters & Remembrance Service | {{shortName}}-->
+<!--description: Sign up for gentle grief-support letters over the first year, and invitations to our annual remembrance service in {{town}}.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Support after the funeral</p>
+    <h1>Grief-support letters</h1>
+    <p class="lead">A short letter at a few points in the first year (one month, three months, six months and the first anniversary) with gentle guidance and details of local support. You can stop at any time.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="newsletter" action="/api/forms/newsletter" method="post">
+      <!--#include form-guard-->
+      <div class="field-row">
+        <div class="field"><label for="nl-email">Email</label><input id="nl-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="nl-name">First name <span class="opt">(optional)</span></label><input id="nl-name" name="first_name" type="text" autocomplete="given-name" maxlength="60"></div>
+      </div>
+      <fieldset>
+        <legend>What would you like to receive? <span class="opt">(optional)</span></legend>
+        <label class="choice"><input type="checkbox" name="interests" value="grief-letters" checked> Grief-support letters over the first year</label>
+        <label class="choice"><input type="checkbox" name="interests" value="remembrance-service"> Invitation to our annual remembrance service</label>
+        <label class="choice"><input type="checkbox" name="interests" value="news"> Occasional news from {{shortName}}</label>
+      </fieldset>
+      <label class="choice consent"><input type="checkbox" name="consent" value="yes" required> <span>Yes, please email me. I understand I will get a confirmation email first, and I can unsubscribe at any time. See our <a href="/privacy/">privacy notice</a>.</span></label>
+      <div><button class="btn" type="submit">Sign up</button></div>
+    </form>
+  </div>
+</section>

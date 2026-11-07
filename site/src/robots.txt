@@ -1,0 +1,3 @@
+User-agent: *
+{{robotsRule}}
+Sitemap: {{domain}}/sitemap.xml

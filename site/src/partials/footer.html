@@ -1,0 +1,63 @@
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="grid grid-4">
+      <div>
+        <h2>{{name}}</h2>
+        <p>{{street}}, {{town}}, {{countyFull}}, {{eircode}}</p>
+        <p>Office: <a href="tel:{{phoneIntl}}">{{phone}}</a><br>24 hours: <a href="tel:{{phone247Intl}}">{{phone247}}</a><br><a href="mailto:{{email}}">{{email}}</a></p>
+      </div>
+      <div>
+        <h2>How we can help</h2>
+        <ul>
+          <li><a href="/someone-has-died/">When someone dies</a></li>
+          <li><a href="/services/">Funeral services</a></li>
+          <li><a href="/services/#direct-cremation">Direct cremation</a></li>
+          <li><a href="/prices/">Prices and price guide</a></li>
+          <li><a href="/pre-planning/">Planning ahead</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Families</h2>
+        <ul>
+          <li><a href="/funeral-notices/">Funeral notices</a></li>
+          <li><a href="/support/">Bereavement support</a></li>
+          <li><a href="/faqs/">Questions families ask</a></li>
+          <li><a href="/appointments/">Book an appointment</a></li>
+          <li><a href="/feedback/">Feedback and complaints</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>About</h2>
+        <ul>
+          <li><a href="/about/">Our family and team</a></li>
+          <li><a href="/funeral-directors-{{townSlug}}/">Funeral directors in {{town}}</a></li>
+          <li><a href="/contact/">Branches and opening hours</a></li>
+          <li><a href="/newsletter/">Grief-support letters</a></li>
+        </ul>
+        <p class="small">Members of the Irish Association of Funeral Directors (IAFD).</p>
+      </div>
+    </div>
+    <div class="footer-base small">
+      <span>© {{year}} {{name}}</span>
+      <span><a href="/privacy/">Privacy</a> · <a href="/cookies/">Cookies</a> · <a href="/accessibility/">Accessibility</a> · <button type="button" data-cookie-open>Cookie settings</button></span>
+    </div>
+  </div>
+</footer>
+<div class="callbar" role="region" aria-label="Quick contact">
+  <a class="btn btn-call" href="tel:{{phone247Intl}}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2Z"/></svg>Call 24/7</a>
+  <a class="btn btn-ghost" href="/contact/#callback">Request a call</a>
+</div>
+<div class="cookie" id="cookie-banner" role="dialog" aria-labelledby="cookie-title" aria-modal="false" hidden>
+  <h2 id="cookie-title">Cookies on this site</h2>
+  <p class="small">We'd like to use analytics cookies to learn which pages help families most. No advertising cookies, ever. <a href="/cookies/">Cookie notice</a></p>
+  <div class="cookie-prefs" hidden>
+    <label class="choice"><input type="checkbox" checked disabled> Essential (always on)</label>
+    <label class="choice"><input type="checkbox" id="consent-analytics"> Analytics (anonymous visit statistics)</label>
+  </div>
+  <div class="btn-row">
+    <button class="btn" type="button" data-cookie="accept">Accept</button>
+    <button class="btn btn-ghost" type="button" data-cookie="reject">Essential only</button>
+    <button class="btn btn-ghost" type="button" data-cookie="prefs">Choose</button>
+  </div>
+</div>
+<script src="/assets/js/main.js" defer></script>

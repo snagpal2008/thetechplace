@@ -1,0 +1,34 @@
+<!--title: Arrange a Funeral in {{town}}, {{countyFull}} | {{shortName}}-->
+<!--description: Start arranging a funeral with {{name}}. Tell us a little about what you need and a funeral director will contact you within 2 hours.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Arranging a funeral</p>
+    <h1>Arrange a funeral</h1>
+    <p class="lead">Tell us a little about what you need. A funeral director will contact you within 2 hours to talk it through and arrange a time to meet, at our funeral home, in your home, or by video.</p>
+    <p>If someone has just died, please <a href="tel:{{phone247Intl}}">call {{phone247}}</a> or use the <a href="/someone-has-died/#tell-us">first-notification form</a> instead.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="arrangement-enquiry" action="/api/forms/arrangement-enquiry" method="post">
+      <!--#include form-guard-->
+      <div class="field-row">
+        <div class="field"><label for="ae-name">Your name</label><input id="ae-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+        <div class="field"><label for="ae-phone">Phone</label><input id="ae-phone" name="phone" type="tel" autocomplete="tel" required pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="ae-email">Email <span class="opt">(optional)</span></label><input id="ae-email" name="email" type="email" autocomplete="email"></div>
+        <div class="field"><label for="ae-dname">Name of the person who has died <span class="opt">(optional)</span></label><input id="ae-dname" name="deceased_name" type="text" maxlength="120"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="ae-type">Type of funeral <span class="opt">(optional)</span></label>
+          <select id="ae-type" name="funeral_type"><option value="">Not sure yet</option><option value="burial">Burial</option><option value="cremation">Cremation</option><option value="direct-cremation">Direct cremation</option><option value="not-sure">I'd like advice</option></select></div>
+        <div class="field"><label for="ae-pref">How should we get in touch? <span class="opt">(optional)</span></label>
+          <select id="ae-pref" name="contact_pref"><option value="phone">Phone call</option><option value="email">Email</option><option value="visit">Meet at the funeral home</option><option value="home-visit">Visit me at home</option></select></div>
+      </div>
+      <div class="field"><label for="ae-msg">Anything you'd like us to know <span class="opt">(optional)</span></label><textarea id="ae-msg" name="message" maxlength="1500"></textarea></div>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Send enquiry</button></div>
+    </form>
+  </div>
+</section>

@@ -1,0 +1,42 @@
+<!--title: Mary Kelly (née Byrne), {{town}}: Funeral Notice (Sample) | {{shortName}}-->
+<!--description: Sample funeral notice layout with funeral arrangements and a moderated book of condolence.-->
+<!--head: <meta name="robots" content="noindex">-->
+<article>
+  <section class="block alt">
+    <div class="wrap narrow">
+      <p class="eyebrow">Funeral notice · Sample</p>
+      <h1>Mary Kelly (née Byrne)</h1>
+      <p class="lead">{{town}}, {{countyFull}}</p>
+      <p>Peacefully, at home, surrounded by her loving family. Mary, beloved wife of the late Tom, and much-loved mother of Anne, Seán and Ciara. Sadly missed by her grandchildren, sister, nieces, nephews, neighbours and friends.</p>
+      <p class="note">This is a sample notice that shows the page layout. It does not refer to a real person.</p>
+      <h2>Funeral arrangements</h2>
+      <dl>
+        <dt><strong>Reposing</strong></dt><dd>At {{name}}, {{street}}, {{town}}, on Thursday from 5 pm to 7 pm.</dd>
+        <dt><strong>Funeral Mass</strong></dt><dd>Friday at 11 am, followed by burial in the local cemetery. The Mass can be watched online.</dd>
+        <dt><strong>Donations</strong></dt><dd>Family flowers only, please. Donations in lieu, if desired, to the Irish Hospice Foundation.</dd>
+      </dl>
+      <p class="btn-row"><a class="btn btn-ghost" href="{{ripieUrl}}" rel="noopener">View on RIP.ie</a></p>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="cond-title">
+    <div class="wrap narrow">
+      <h2 id="cond-title">Book of condolence</h2>
+      <div id="condolences" data-notice="sample-notice"><p class="muted small">Messages appear here once they have been checked.</p></div>
+      <h3 style="margin-top:2rem">Leave a message for the family</h3>
+      <form class="form" data-form="condolence" action="/api/forms/condolence" method="post">
+        <!--#include form-guard-->
+        <input type="hidden" name="notice" value="sample-notice">
+        <div class="field-row">
+          <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+          <div class="field"><label for="c-town">Your town <span class="opt">(optional)</span></label><input id="c-town" name="town" type="text" maxlength="80"></div>
+        </div>
+        <div class="field"><label for="c-email">Email <span class="opt">(never shown)</span></label><input id="c-email" name="email" type="email" autocomplete="email" required><p class="hint">So we can contact you if there is a problem with your message.</p></div>
+        <div class="field"><label for="c-msg">Your message</label><textarea id="c-msg" name="message" required maxlength="1000"></textarea><p class="hint">Up to 1,000 characters. Every message is read before it is published.</p></div>
+        <label class="choice consent"><input type="checkbox" name="publish_ok" value="yes" required> <span>I agree that my name, town and message may be published on this page.</span></label>
+        <!--#include consent-->
+        <div><button class="btn" type="submit">Send condolences</button></div>
+      </form>
+    </div>
+  </section>
+</article>

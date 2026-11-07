@@ -1,0 +1,37 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#22332d">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:site_name" content="{{name}}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{domain}}/assets/img/og-image.jpg">
+<meta property="og:locale" content="en_IE">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Multilingual-ready: add <link rel="alternate" hreflang="ga" href="{{domain}}/ga/..."> when Irish pages exist -->
+<link rel="alternate" hreflang="en-IE" href="{{domain}}/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FuneralHome",
+  "@id": "{{domain}}/#funeralhome",
+  "name": "{{name}}",
+  "url": "{{domain}}/",
+  "image": "{{domain}}/assets/img/og-image.jpg",
+  "telephone": "{{phoneIntl}}",
+  "email": "{{email}}",
+  "foundingDate": "{{founded}}",
+  "priceRange": "€€",
+  "address": { "@type": "PostalAddress", "streetAddress": "{{street}}", "addressLocality": "{{town}}", "addressRegion": "{{countyFull}}", "postalCode": "{{eircode}}", "addressCountry": "IE" },
+  "geo": { "@type": "GeoCoordinates", "latitude": {{lat}}, "longitude": {{lng}} },
+  "areaServed": [{ "@type": "AdministrativeArea", "name": "County {{county}}" }],
+  "openingHoursSpecification": [
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "09:00", "closes": "17:30" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "10:00", "closes": "13:00" }
+  ],
+  "contactPoint": { "@type": "ContactPoint", "telephone": "{{phone247Intl}}", "contactType": "emergency", "hoursAvailable": { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "00:00", "closes": "23:59" }, "areaServed": "IE", "availableLanguage": ["en", "ga"] },
+  "memberOf": { "@type": "Organization", "name": "Irish Association of Funeral Directors" },
+  "sameAs": ["{{googleReviewsUrl}}"]
+}
+</script>

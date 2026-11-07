@@ -1,0 +1,41 @@
+# OPTIONAL fallback host: publishes a static copy to GitHub Pages (free). Forms do NOT work there.
+# The recommended free host is Cloudflare Pages + D1 (working forms): see docs/08-hosting.md.
+# To use: repo Settings → Pages → Source: "GitHub Actions", then Actions → this workflow → Run workflow.
+# Site URL: https://<user>.github.io/<repo>/  (custom domain: Settings → Pages → Custom domain)
+name: Deploy website to GitHub Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # --static uses relative links, so the site works under /<repo>/ as well as on a custom domain
+      - run: node build.mjs --static
+        working-directory: site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist-static
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

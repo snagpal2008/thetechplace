@@ -1,0 +1,107 @@
+<!--title: Pre-Planning a Funeral in {{county}}: Cost Calculator | {{shortName}}-->
+<!--description: Plan your funeral wishes in advance with {{name}}. Use our funeral cost calculator for {{countyFull}} and talk to us with no obligation.-->
+<section class="hero">
+  <img class="hero-img" src="/assets/img/coastline-960.webp" srcset="/assets/img/coastline-480.webp 480w, /assets/img/coastline-960.webp 960w, /assets/img/coastline-1600.webp 1600w" sizes="100vw" width="1600" height="900" alt="" fetchpriority="high">
+  <div class="wrap"><div class="hero-text">
+    <p class="eyebrow">Planning ahead</p>
+    <h1>Make your wishes known</h1>
+    <p class="lead">Planning your own funeral can be a kindness to the people you love. It means fewer decisions for them at a hard time, and the reassurance that it will be done your way.</p>
+  </div></div>
+</section>
+
+<section class="block" aria-labelledby="how-title">
+  <h2 id="how-title" class="visually-hidden">How planning ahead works</h2>
+  <div class="wrap grid grid-3">
+    <div class="card"><h3>1. Record your wishes</h3><p>Burial or cremation, music, readings, where you'd like to repose. Note as much or as little as you like.</p></div>
+    <div class="card"><h3>2. Know the cost</h3><p>Use the calculator below for a guide price at today's rates. Your plan includes a written estimate.</p></div>
+    <div class="card"><h3>3. Pay later or now</h3><p>Keep your wishes on file free of charge. Or pay in advance into a protected account to fix our fees at today's prices.</p></div>
+  </div>
+</section>
+
+<section class="block alt" id="calculator-section" aria-labelledby="calc-title">
+  <div class="wrap">
+    <h2 id="calc-title">Funeral cost calculator</h2>
+    <p class="narrow">Choose the options that matter to you to see a guide price. Third-party costs are shown as ranges because they depend on the cemetery, crematorium and suppliers you choose.</p>
+    <div class="grid grid-2-1" style="align-items:start">
+      <form id="calculator" class="form" aria-describedby="calc-total-wrap">
+        <fieldset>
+          <legend>Type of funeral</legend>
+          <label class="choice"><input type="radio" name="calc_type" value="burial" data-price="2800" data-label="Our service fees (burial)" checked> Traditional funeral and burial</label>
+          <label class="choice"><input type="radio" name="calc_type" value="cremation" data-price="2800" data-label="Our service fees (cremation)"> Funeral service and cremation</label>
+          <label class="choice"><input type="radio" name="calc_type" value="direct" data-price="1950" data-label="Direct cremation, all inclusive"> Direct cremation (no service)</label>
+        </fieldset>
+        <div class="field" data-for="burial cremation">
+          <label for="calc-coffin">Coffin</label>
+          <select id="calc-coffin" data-price>
+            <option data-price="650" data-label="Coffin: simple">Simple coffin (€650)</option>
+            <option data-price="1050" data-label="Coffin: standard veneer" selected>Standard veneer (€1,050)</option>
+            <option data-price="950" data-label="Coffin: eco wicker">Eco wicker or willow (€950)</option>
+            <option data-price="2200" data-label="Coffin: solid oak">Solid oak (€2,200)</option>
+          </select>
+        </div>
+        <fieldset data-for="burial">
+          <legend>Grave</legend>
+          <label class="choice"><input type="radio" name="calc_grave" data-price="600-1200" data-label="Opening a family grave" checked> Open an existing family grave (€600–€1,200)</label>
+          <label class="choice"><input type="radio" name="calc_grave" data-price="1200-5000" data-label="New grave and opening"> Buy a new grave (€1,200–€5,000)</label>
+        </fieldset>
+        <fieldset data-for="cremation">
+          <legend>Crematorium</legend>
+          <label class="choice"><input type="checkbox" checked disabled> Crematorium fee (€450–€650)</label>
+          <input type="hidden" data-price="450-650" data-label="Crematorium fee">
+        </fieldset>
+        <fieldset data-for="burial cremation">
+          <legend>Ceremony</legend>
+          <label class="choice"><input type="checkbox" data-price="150-350" data-label="Church offering or celebrant" checked> Church offering or celebrant (€150–€350)</label>
+          <label class="choice"><input type="checkbox" data-price="100-350" data-label="Music"> Organist, singer or musicians (€100–€350)</label>
+          <label class="choice"><input type="checkbox" data-price="150" data-label="Live-stream"> Live-stream for family abroad (€150)</label>
+        </fieldset>
+        <fieldset>
+          <legend>Optional extras</legend>
+          <label class="choice"><input type="checkbox" data-price="80-150" data-label="RIP.ie notice" checked> RIP.ie death notice (€80–€150)</label>
+          <label class="choice"><input type="checkbox" data-price="100-400" data-label="Newspaper notice"> Newspaper notice (€100–€400)</label>
+          <label class="choice"><input type="checkbox" data-price="150-400" data-label="Flowers"> Flowers (€150–€400)</label>
+          <label class="choice"><input type="checkbox" data-price="250-400" data-label="Limousine"> Limousine for family (€250–€400)</label>
+          <label class="choice"><input type="checkbox" data-price="150-400" data-label="Printed booklets"> Printed booklets or memorial cards (€150–€400)</label>
+        </fieldset>
+      </form>
+      <aside class="panel calc-total" id="calc-total-wrap" aria-live="polite">
+        <p class="small muted" style="margin:0">Guide price (including VAT)</p>
+        <output id="calc-total" for="calculator">€0</output>
+        <ul id="calc-lines" class="small"></ul>
+        <p class="small muted">A guide only, using sample prices. It is not a quote.</p>
+        <a class="btn" href="#plan-form">Send me this estimate</a>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="plan-form" aria-labelledby="pp-title">
+  <div class="wrap narrow">
+    <h2 id="pp-title">Talk to us about planning ahead</h2>
+    <p>No obligation and no sales calls. Our pre-planning adviser will answer your questions by phone, by email, or over a cup of tea at our funeral home or in your own home.</p>
+    <form class="form" data-form="preplanning" action="/api/forms/preplanning" method="post">
+      <!--#include form-guard-->
+      <input type="hidden" name="estimate" id="estimate-field">
+      <div class="field-row">
+        <div class="field"><label for="pp-name">Your name</label><input id="pp-name" name="name" type="text" autocomplete="name" required maxlength="100"></div>
+        <div class="field"><label for="pp-email">Email</label><input id="pp-email" name="email" type="email" autocomplete="email" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="pp-phone">Phone <span class="opt">(optional)</span></label><input id="pp-phone" name="phone" type="tel" autocomplete="tel" pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+        <div class="field"><label for="pp-pref">How would you like us to contact you? <span class="opt">(optional)</span></label>
+          <select id="pp-pref" name="contact_pref"><option value="">No preference</option><option value="phone">Phone call</option><option value="email">Email</option><option value="visit">Visit at the funeral home</option><option value="home-visit">Visit at my home</option></select></div>
+      </div>
+      <fieldset>
+        <legend>Who is the plan for?</legend>
+        <label class="choice"><input type="radio" name="for_whom" value="myself" required> Myself</label>
+        <label class="choice"><input type="radio" name="for_whom" value="someone-else"> Someone else (for example, a parent)</label>
+      </fieldset>
+      <div class="field"><label for="pp-type">Type of funeral <span class="opt">(optional)</span></label>
+        <select id="pp-type" name="funeral_type"><option value="">Not sure yet</option><option value="burial">Burial</option><option value="cremation">Cremation</option><option value="direct-cremation">Direct cremation</option></select></div>
+      <div class="field"><label for="pp-msg">Your questions or wishes <span class="opt">(optional)</span></label><textarea id="pp-msg" name="message" maxlength="1500"></textarea></div>
+      <!--#include consent-->
+      <label class="choice consent"><input type="checkbox" name="marketing" value="yes"> <span>Optional: send me occasional letters about remembrance events and planning ahead. You can unsubscribe at any time.</span></label>
+      <div><button class="btn" type="submit">Send my enquiry</button></div>
+    </form>
+  </div>
+</section>

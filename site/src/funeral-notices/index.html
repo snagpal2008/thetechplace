@@ -1,0 +1,45 @@
+<!--title: Funeral Notices {{town}}, {{countyFull}} | Death Notices | {{shortName}}-->
+<!--description: Current funeral notices and arrangements from {{name}}, {{town}}. Leave a message of condolence, or submit a death notice for RIP.ie and local papers.-->
+<section class="hero dark">
+  <img class="hero-img" src="/assets/img/candle-960.webp" srcset="/assets/img/candle-480.webp 480w, /assets/img/candle-960.webp 960w, /assets/img/candle-1600.webp 1600w" sizes="100vw" width="1600" height="900" alt="" fetchpriority="high">
+  <div class="wrap"><div class="hero-text">
+    <p class="eyebrow">Funeral notices</p>
+    <h1>Funeral notices</h1>
+    <p class="lead">Arrangements for the funerals we are looking after. You can leave a message of condolence for the family on each notice.</p>
+  </div></div>
+</section>
+
+<section class="block">
+  <div class="wrap grid grid-2-1" style="align-items:start">
+    <div>
+      <form class="form" role="search" action="/funeral-notices/" method="get" style="margin-bottom:1.5rem">
+        <div class="field"><label for="q">Search notices by name or town</label><input id="q" name="q" type="text" autocomplete="off"></div>
+      </form>
+      <div class="grid">
+        <article class="card notice-card">
+          <h2 class="h3" style="font-size:1.3rem"><a href="/funeral-notices/sample-notice/">Mary Kelly (née Byrne)</a></h2>
+          <p class="notice-meta">{{town}}, {{countyFull}} · Peacefully, at home · Sample notice</p>
+          <p class="small">Reposing at {{name}}, {{street}}, on Thursday from 5 pm to 7 pm. Funeral Mass on Friday at 11 am, followed by burial in the local cemetery.</p>
+          <a class="more" href="/funeral-notices/sample-notice/">Read notice and leave condolences</a>
+        </article>
+        <article class="card notice-card">
+          <h2 style="font-size:1.3rem">Notice layout example</h2>
+          <p class="notice-meta">Notices are published only after the family has approved the wording</p>
+          <p class="small">In production, this list is fed from the Dílis platform, newest first, with each notice linked to its listing on RIP.ie.</p>
+        </article>
+      </div>
+    </div>
+    <aside class="grid">
+      <div class="panel">
+        <h2 style="font-size:1.3rem">RIP.ie</h2>
+        <p class="small">We publish our notices on RIP.ie, Ireland's death-notice website, where you can also search notices from other funeral directors.</p>
+        <a class="btn btn-ghost" href="{{ripieUrl}}" rel="noopener">Search notices on RIP.ie</a>
+      </div>
+      <div class="card">
+        <h2 style="font-size:1.3rem">Placing a notice</h2>
+        <p class="small">If we are looking after the funeral, we will write and place the notice with you. You can also send us the details using our form.</p>
+        <a class="more" href="/funeral-notices/submit/">Submit a death notice</a>
+      </div>
+    </aside>
+  </div>
+</section>

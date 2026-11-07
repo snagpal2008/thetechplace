@@ -1,0 +1,40 @@
+<!--title: Feedback and Complaints | {{shortName}}-->
+<!--description: Tell {{name}} how we did. Compliments, suggestions and complaints are read by our managing director, who replies personally within two working days.-->
+<section class="block alt">
+  <div class="wrap narrow">
+    <p class="eyebrow">Feedback</p>
+    <h1>Tell us how we did</h1>
+    <p class="lead">Every message is read by our managing director. If something wasn't right, we want to know, and we will put it right where we can.</p>
+  </div>
+</section>
+<section class="block">
+  <div class="wrap narrow">
+    <form class="form" data-form="feedback" action="/api/forms/feedback" method="post">
+      <!--#include form-guard-->
+      <fieldset>
+        <legend>What would you like to share?</legend>
+        <label class="choice"><input type="radio" name="kind" value="compliment" required> A compliment</label>
+        <label class="choice"><input type="radio" name="kind" value="suggestion"> A suggestion</label>
+        <label class="choice"><input type="radio" name="kind" value="complaint"> A complaint</label>
+      </fieldset>
+      <div class="field"><label for="fb-msg">Your message</label><textarea id="fb-msg" name="message" required maxlength="3000"></textarea></div>
+      <div class="field-row">
+        <div class="field"><label for="fb-ref">Whose funeral was it? <span class="opt">(optional)</span></label><input id="fb-ref" name="funeral_ref" type="text" maxlength="120"></div>
+        <div class="field"><label for="fb-date">Date of the funeral <span class="opt">(optional)</span></label><input id="fb-date" name="service_date" type="date" data-no-future></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="fb-name">Your name <span class="opt">(optional)</span></label><input id="fb-name" name="name" type="text" autocomplete="name" maxlength="100"></div>
+        <div class="field"><label for="fb-email">Email <span class="opt">(optional)</span></label><input id="fb-email" name="email" type="email" autocomplete="email"></div>
+      </div>
+      <div class="field"><label for="fb-phone">Phone <span class="opt">(optional)</span></label><input id="fb-phone" name="phone" type="tel" autocomplete="tel" pattern="[0-9 +\-\(\)]{7,20}" data-pattern-msg="Please enter a phone number, for example 087 123 4567."></div>
+      <fieldset>
+        <legend>Would you like a reply? <span class="opt">(optional)</span></legend>
+        <label class="choice"><input type="radio" name="reply" value="yes"> Yes, please contact me</label>
+        <label class="choice"><input type="radio" name="reply" value="no"> No reply needed</label>
+      </fieldset>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Send feedback</button></div>
+    </form>
+    <p class="small muted" style="margin-top:1.5rem">Our complaints process: we acknowledge within 2 working days and aim to resolve within 20 working days. If you are not satisfied, you can raise it with the Irish Association of Funeral Directors.</p>
+  </div>
+</section>
