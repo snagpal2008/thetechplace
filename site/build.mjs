@@ -1,13 +1,15 @@
 // Static build: copies src/ to dist/, expands <!--#include name--> partials and
 // fills {{token}} placeholders from config.json. No dependencies.
-//   node build.mjs
+//   node build.mjs            → dist/         (for a web server: clean URLs like /services/)
+//   node build.mjs --static   → dist-static/  (open index.html by double-clicking: no server needed)
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync, rmSync } from "node:fs";
 import { join, dirname, extname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const src = join(root, "src");
-const dist = join(root, "dist");
+const STATIC = process.argv.includes("--static");
+const dist = join(root, STATIC ? "dist-static" : "dist");
 const config = JSON.parse(readFileSync(join(root, "config.json"), "utf8"));
 
 const fill = (text) =>
@@ -34,6 +36,23 @@ function wrap(html, rel) {
     .replace("%BODY%", () => html);
 }
 
+// --static: turn site-root links ("/services/", "/assets/…") into relative file links
+// ("../services/index.html") so pages work from file:// and any sub-folder.
+function relativise(html, rel) {
+  const depth = rel.replace(/\\/g, "/").split("/").length - 1;
+  const up = depth ? "../".repeat(depth) : "./";
+  const fix = (url) => {
+    if (!url.startsWith("/") || url.startsWith("//")) return url;
+    const [path, hash = ""] = url.slice(1).split("#");
+    const file = path === "" || path.endsWith("/") ? path + "index.html" : path;
+    return up + file + (hash ? "#" + hash : "");
+  };
+  return html
+    .replace(/\b(href|src|action)="([^"]*)"/g, (_, a, v) => `${a}="${fix(v)}"`)
+    .replace(/\b(srcset|imagesrcset)="([^"]*)"/g, (_, a, v) =>
+      `${a}="${v.split(",").map((part) => { const [u, ...rest] = part.trim().split(/\s+/); return [fix(u), ...rest].join(" "); }).join(", ")}"`);
+}
+
 function render(html) {
   // Partials may themselves contain includes (one level is enough here).
   for (let i = 0; i < 2; i++) html = html.replace(/<!--#include (\w[\w-]*)-->/g, (_, n) => partial(n));
@@ -53,7 +72,7 @@ const pages = [];
     mkdirSync(dirname(to), { recursive: true });
     const ext = extname(entry);
     if ([".html", ".xml", ".txt", ".json", ".webmanifest", ".css", ".js"].includes(ext)) {
-      writeFileSync(to, ext === ".html" ? render(wrap(readFileSync(from, "utf8"), rel)) : fill(readFileSync(from, "utf8")));
+      writeFileSync(to, ext === ".html" ? (STATIC ? relativise(render(wrap(readFileSync(from, "utf8"), rel)), rel) : render(wrap(readFileSync(from, "utf8"), rel))) : fill(readFileSync(from, "utf8")));
       if (ext === ".html" && entry !== "404.html") pages.push(rel.replace(/index\.html$/, "").replace(/\\/g, "/"));
     } else copyFileSync(from, to);
   }
@@ -67,4 +86,4 @@ writeFileSync(
     pages.sort().map((p) => `  <url><loc>${config.domain}/${p}</loc><lastmod>${today}</lastmod></url>`).join("\n") +
     `\n</urlset>\n`
 );
-console.log(`Built ${pages.length} pages into dist/`);
+console.log(`Built ${pages.length} pages into ${STATIC ? "dist-static/ (open dist-static/index.html directly)" : "dist/"}`);

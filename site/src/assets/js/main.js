@@ -18,8 +18,9 @@
       if (e.key === "Escape" && nav.classList.contains("open")) { nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); toggle.focus(); }
     });
   }
-  const here = location.pathname.replace(/index\.html$/, "");
-  $$(".site-nav a").forEach((a) => { if (a.getAttribute("href") === here) a.setAttribute("aria-current", "page"); });
+  const clean = (p) => p.replace(/index\.html$/, "");
+  const here = clean(location.pathname);
+  $$(".site-nav a").forEach((a) => { if (clean(new URL(a.getAttribute("href"), location.href).pathname) === here) a.setAttribute("aria-current", "page"); });
 
   /* ---------- cookie consent (GDPR / ePrivacy) ---------- */
   const KEY = "cookie-consent-v1";
@@ -126,6 +127,11 @@
       if (first) {
         status.className = "form-status err"; status.textContent = "Please check the highlighted fields.";
         first.focus(); return;
+      }
+      if (location.protocol === "file:") {
+        status.className = "form-status err";
+        status.textContent = "This is an offline preview, so forms can't be sent. Run the site with “npm start” to test forms. On the live website they go straight to the funeral home.";
+        status.focus(); return;
       }
       const btn = $("button[type=submit]", form);
       btn.disabled = true; const label = btn.textContent; btn.textContent = "Sending…";

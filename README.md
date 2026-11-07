@@ -4,7 +4,19 @@ A calm, mobile-first, fast website for a local Irish funeral director, built to 
 
 > **Sample details.** The funeral home's name, town, phone numbers and prices are **placeholders** ("Hawthorn Family Funeral Directors", Naas, Co. Kildare). Change them in one place, `site/config.json`, and rebuild.
 
-## Run it locally
+## Just view it (no server)
+
+```bash
+cd site
+```
+
+```bash
+npm run build:static
+```
+
+Then double-click `site/dist-static/index.html`. Every page, image and link works offline. Forms show a message explaining that they need the server, which is set up below.
+
+## Run it locally with working forms
 
 Requires Node 18+ (no npm packages needed) and, only to regenerate images, Python 3 with Pillow.
 
