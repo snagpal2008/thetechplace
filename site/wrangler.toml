@@ -3,6 +3,8 @@
 name = "thetechplace"   # must match the Worker name in the Cloudflare dashboard
 main = "worker.js"
 compatibility_date = "2025-01-01"
+workers_dev = true    # keep https://thetechplace.<account>.workers.dev working
+preview_urls = true   # each branch build gets its own preview link
 
 # Build src/ → dist/ automatically before every `wrangler deploy` / `wrangler dev`,
 # so the deploy works even if the dashboard's Build command is left empty.
