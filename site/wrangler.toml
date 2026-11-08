@@ -4,6 +4,11 @@ name = "thetechplace"   # must match the Worker name in the Cloudflare dashboard
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
+# Build src/ → dist/ automatically before every `wrangler deploy` / `wrangler dev`,
+# so the deploy works even if the dashboard's Build command is left empty.
+[build]
+command = "node build.mjs"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
