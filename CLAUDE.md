@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Rules for Claude sessions working in this repo. The owner gives instructions in Hindi, English or Hinglish; reply in the same mix, short and simple.
+Rules for Claude sessions working in this repo. The owner may write in Hindi, English or Hinglish. **Always reply in English only**, short and simple, with clear numbered steps.
 
 ## How changes go live
 
