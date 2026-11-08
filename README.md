@@ -2,6 +2,8 @@
 
 A calm, mobile-first, fast website for a local Irish funeral director, built to rank in local search and to connect later to the **Dílis** platform (kin portal, vendor hub, online payment).
 
+> **Live site:** https://snagpal2008.github.io/thetechplace/ — published from `master` automatically by GitHub Pages. Forms are saved to a Google Sheet and emailed to Gmail. Setup: [docs/09-publish-with-github.md](docs/09-publish-with-github.md).
+
 > **Sample details.** The funeral home's name, town, phone numbers and prices are **placeholders** ("Hawthorn Family Funeral Directors", Naas, Co. Kildare). Change them in one place, `site/config.json`, and rebuild.
 
 ## Just view it (no server)
@@ -53,7 +55,8 @@ Runs the database and validation tests.
 | **D.** Sitemap and wireframes | [docs/05-sitemap-and-wireframes.md](docs/05-sitemap-and-wireframes.md) |
 | **E.** Images: shot list, rules, credits | [docs/06-images-shot-list.md](docs/06-images-shot-list.md), [site/IMAGE_CREDITS.md](site/IMAGE_CREDITS.md) |
 | **F.** Traffic plan: GBP, schema, keywords, speed, analytics | [docs/07-traffic-plan.md](docs/07-traffic-plan.md) |
-| Free hosting with working forms (Cloudflare Workers + D1 SQLite) | [docs/08-hosting.md](docs/08-hosting.md) |
+| **Publish with GitHub (recommended):** GitHub Pages + Google Sheets + Gmail alerts | [docs/09-publish-with-github.md](docs/09-publish-with-github.md) |
+| Alternative host: Cloudflare Workers + D1 SQLite | [docs/08-hosting.md](docs/08-hosting.md) |
 | The website (21 pages) | [site/src/](site/src/) |
 
 ## How the site is built
@@ -71,6 +74,7 @@ site/
   src/partials/        ← layout, head (FuneralHome JSON-LD), header, footer, consent, form guard
   src/assets/          ← style.css, main.js, generated WebP images
 tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
+tools/apps-script/Code.gs ← Google Sheets forms backend (generated from site/forms.mjs: npm run apps-script)
 ```
 
 - **No frameworks, no web fonts, no third-party scripts by default.** Analytics loads only after cookie consent, and the map only on request.

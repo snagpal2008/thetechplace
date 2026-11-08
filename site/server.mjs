@@ -22,7 +22,7 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=
   ".jpg": "image/jpeg", ".png": "image/png", ".xml": "application/xml", ".txt": "text/plain; charset=utf-8", ".ico": "image/x-icon" };
 
 const SECURITY = {
-  "Content-Security-Policy": "default-src 'self'; img-src 'self' data: https://*.openstreetmap.org; frame-src https://www.openstreetmap.org; script-src 'self' https://www.googletagmanager.com; connect-src 'self' https://*.google-analytics.com; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  "Content-Security-Policy": "default-src 'self'; img-src 'self' data: https://*.openstreetmap.org; frame-src https://www.openstreetmap.org; script-src 'self' https://www.googletagmanager.com; connect-src 'self' https://*.google-analytics.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
