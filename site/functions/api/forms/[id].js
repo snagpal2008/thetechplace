@@ -8,7 +8,7 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
   // Only accept posts from our own pages (blocks other sites from submitting on a visitor's behalf).
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return json(403, { error: "Forbidden." });
-  const store = d1Store(env);
+  const store = await d1Store(env);
   // 10 posts per 10 minutes per visitor, same as the local server.
   if (await store.rateLimited(await ipKey(request, env))) {
     return json(429, { error: "Too many messages in a short time. Please wait a few minutes, or call us." });
@@ -24,9 +24,9 @@ export async function onRequestPost({ request, params, env, waitUntil }) {
   if (r.spam) return json(200, { message: "Thank you." });
 
   const id = await store.save(params.id, r.def, r.data);
-  // Alert email (tools/gmail-alert.gs) via ALERT_WEBHOOK_URL. Condolences are moderated, not alerted.
+  // Alert email (tools/gmail-alert.gs) via ALERT_WEBHOOK_URL. Moderated forms (condolences, reviews) go to a queue, not an alert.
   // waitUntil lets the alert finish after the visitor already has their reply.
-  if (env.ALERT_WEBHOOK_URL && params.id !== "condolence") {
+  if (env.ALERT_WEBHOOK_URL && !r.def.moderated) {
     waitUntil(sendAlert(env.ALERT_WEBHOOK_URL, alertPayload(params.id, r.def, r.data, id)));
   }
   return json(200, { ok: true, message: r.def.message, reference: id.slice(0, 8).toUpperCase() });

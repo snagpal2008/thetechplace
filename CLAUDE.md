@@ -6,11 +6,11 @@ Rules for Claude sessions working in this repo. The owner may write in Hindi, En
 
 ```
 Claude edits → push to a claude/* branch → Cloudflare builds a preview URL
-→ owner checks the preview → PR merged into main → Cloudflare deploys to the live domain
+→ owner checks the preview → PR merged into master → Cloudflare deploys to the live domain
 ```
 
-- `main` = the live website. **Never push to `main` directly.** Work on the session's branch and push there.
-- Merging to `main` publishes the site. Open or merge a PR only when the owner asks.
+- `master` = the live website. **Never push to `master` directly.** Work on the session's branch and push there.
+- Merging to `master` publishes the site. Open or merge a PR only when the owner asks.
 - Cloudflare Workers Builds deploys automatically (root `site`, build `node build.mjs`, deploy `npx wrangler deploy`). There is no manual deploy step for Claude to run.
 - GitHub Actions (`.github/workflows/ci.yml`) runs the tests and both builds on every PR. Do not merge a PR with a red check.
 

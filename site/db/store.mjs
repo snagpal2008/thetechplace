@@ -20,6 +20,14 @@ export function makeStore(db) {
         );
         return id;
       }
+      if (formId === "review") {
+        await db.run(
+          `INSERT INTO reviews (id, name, town, rating, service, message, email, status, received_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+          [id, data.name, data.town || null, Number(data.rating), data.service || null, data.message, data.email || null, at]
+        );
+        return id;
+      }
       const respondBy = new Date(now.getTime() + def.slaHours * 3_600_000).toISOString();
       const expires = def.retentionDays ? new Date(now.getTime() + def.retentionDays * DAY).toISOString() : null;
       await db.run(
@@ -44,12 +52,37 @@ export function makeStore(db) {
       return db.all(`SELECT id, notice, name, town, message, received_at FROM condolences WHERE status = 'pending' ORDER BY received_at`, []);
     },
 
-    /** Approve or reject by id (or a unique id prefix of 8+ characters). Returns rows changed. */
-    async moderate(idPrefix, status, now = new Date()) {
-      if (!["approved", "rejected"].includes(status) || !/^[0-9a-f-]{8,36}$/i.test(idPrefix)) return 0;
-      const rows = await db.all(`SELECT id FROM condolences WHERE id LIKE ? || '%'`, [idPrefix]);
+    /** Public: approved reviews, newest first. Only published fields leave the database. */
+    approvedReviews(limit = 50) {
+      return db.all(
+        `SELECT name, town, rating, service, message, substr(received_at, 1, 10) AS date
+           FROM reviews WHERE status = 'approved'
+          ORDER BY received_at DESC LIMIT ?`,
+        [Math.min(Math.max(Number(limit) || 50, 1), 200)]
+      );
+    },
+
+    /** Public: number of approved reviews and their average rating (one decimal place). */
+    async reviewSummary() {
+      const [row] = await db.all(`SELECT COUNT(*) AS n, AVG(rating) AS avg FROM reviews WHERE status = 'approved'`, []);
+      const count = Number(row?.n ?? 0);
+      return { count, average: count ? Math.round(Number(row.avg) * 10) / 10 : null };
+    },
+
+    pendingReviews() {
+      return db.all(`SELECT id, name, town, rating, service, message, received_at FROM reviews WHERE status = 'pending' ORDER BY received_at`, []);
+    },
+
+    /**
+     * Approve or reject a condolence (default) or a review, by id or a unique id prefix of 8+ characters.
+     * Returns rows changed.
+     */
+    async moderate(idPrefix, status, now = new Date(), kind = "condolence") {
+      const table = { condolence: "condolences", review: "reviews" }[kind];
+      if (!table || !["approved", "rejected"].includes(status) || !/^[0-9a-f-]{8,36}$/i.test(idPrefix)) return 0;
+      const rows = await db.all(`SELECT id FROM ${table} WHERE id LIKE ? || '%'`, [idPrefix]);
       if (rows.length !== 1) return 0;
-      const r = await db.run(`UPDATE condolences SET status = ?, moderated_at = ? WHERE id = ?`, [status, now.toISOString(), rows[0].id]);
+      const r = await db.run(`UPDATE ${table} SET status = ?, moderated_at = ? WHERE id = ?`, [status, now.toISOString(), rows[0].id]);
       return r.changes ?? 1;
     },
 
@@ -82,7 +115,10 @@ export function makeStore(db) {
       const a = await db.run(`DELETE FROM submissions WHERE expires_at IS NOT NULL AND expires_at < ?`, [at]);
       const b = await db.run(`DELETE FROM condolences WHERE status = 'rejected' AND moderated_at < ?`, [monthAgo]);
       const c = await db.run(`UPDATE condolences SET email = NULL WHERE email IS NOT NULL AND received_at < ?`, [yearAgo]);
-      return { submissionsDeleted: a.changes ?? 0, rejectedCondolencesDeleted: b.changes ?? 0, emailsCleared: c.changes ?? 0 };
+      const d = await db.run(`DELETE FROM reviews WHERE status = 'rejected' AND moderated_at < ?`, [monthAgo]);
+      const e = await db.run(`UPDATE reviews SET email = NULL WHERE email IS NOT NULL AND received_at < ?`, [yearAgo]);
+      return { submissionsDeleted: a.changes ?? 0, rejectedCondolencesDeleted: b.changes ?? 0, emailsCleared: (c.changes ?? 0) + (e.changes ?? 0),
+        rejectedReviewsDeleted: d.changes ?? 0 };
     }
   };
 }

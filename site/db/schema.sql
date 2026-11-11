@@ -35,6 +35,23 @@ CREATE TABLE IF NOT EXISTS condolences (
 CREATE INDEX IF NOT EXISTS idx_condolences_notice ON condolences (notice, status, received_at);
 CREATE INDEX IF NOT EXISTS idx_condolences_queue  ON condolences (status, received_at);
 
+-- Family reviews: published (name, town, rating, message) only once approved, like condolences.
+CREATE TABLE IF NOT EXISTS reviews (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,              -- published (e.g. "Áine M.")
+  town          TEXT,                       -- published
+  rating        INTEGER NOT NULL            -- published, 1 to 5
+                CHECK (rating BETWEEN 1 AND 5),
+  service       TEXT,                       -- published: burial, cremation, ...
+  message       TEXT NOT NULL,              -- published, always rendered as plain text
+  email         TEXT,                       -- never published; cleared after 12 months
+  status        TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'approved', 'rejected')),
+  received_at   TEXT NOT NULL,
+  moderated_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_public ON reviews (status, received_at);
+
 -- Rate limiting on Cloudflare (no shared memory there). Holds a keyed hash of the visitor's
 -- IP address (never the IP itself), rotated daily; rows are deleted after an hour.
 CREATE TABLE IF NOT EXISTS rate_hits (

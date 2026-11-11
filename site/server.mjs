@@ -62,7 +62,7 @@ async function handleForm(req, res, id) {
   if (r.spam) return json(res, 200, { message: "Thank you." }); // never reveal the trap
   const recordId = await store.save(id, r.def, r.data);
   // Alert email via ALERT_WEBHOOK_URL (tools/gmail-alert.gs), if set. The log line holds no personal data.
-  const alerted = process.env.ALERT_WEBHOOK_URL && id !== "condolence"
+  const alerted = process.env.ALERT_WEBHOOK_URL && !r.def.moderated
     ? await sendAlert(process.env.ALERT_WEBHOOK_URL, alertPayload(id, r.def, r.data, recordId)) : null;
   console.log(`[form] ${r.def.title} · owner: ${r.def.owner} · SLA ${r.def.slaHours}h · ${recordId}${alerted === null ? " · no alert configured" : alerted ? " · alert sent" : " · ALERT FAILED"}`);
   return json(res, 200, { ok: true, message: r.def.message, reference: recordId.slice(0, 8).toUpperCase() });
@@ -99,6 +99,11 @@ createServer(async (req, res) => {
       const notice = (url.searchParams.get("notice") || "").slice(0, 120);
       return json(res, 200, notice ? await store.approvedCondolences(notice) : []);
     }
+    if (url.pathname === "/api/reviews" && req.method === "GET") {
+      const limit = Number(url.searchParams.get("limit")) || 50;
+      return json(res, 200, { summary: await store.reviewSummary(), reviews: await store.approvedReviews(limit) });
+    }
+    if (url.pathname === "/api/health" && req.method === "GET") return json(res, 200, { ok: true, database: "connected (local SQLite)" });
     if (url.pathname.startsWith("/api/")) return json(res, 404, { error: "Not found" });
     if (!["GET", "HEAD"].includes(req.method)) return send(res, 405, "Method not allowed");
     return await serveStatic(req, res, url.pathname);

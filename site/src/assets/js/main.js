@@ -170,6 +170,34 @@
       }));
     }).catch(() => {});
   }
+  /* ---------- reviews: approved reviews replace the sample cards once there are any ---------- */
+  const lists = $$("[data-reviews]");
+  const summaries = $$("[data-review-summary]");
+  if ((lists.length || summaries.length) && location.protocol !== "file:") {
+    const limit = Math.max(...lists.map((l) => Number(l.dataset.limit) || 3), 3);
+    fetch(`/api/reviews?limit=${limit}`).then((r) => (r.ok ? r.json() : null)).then((data) => {
+      if (!data || !data.reviews || !data.reviews.length) return;
+      const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+      summaries.forEach((s) => {
+        s.textContent = `${stars(Math.round(data.summary.average))} ${data.summary.average.toFixed(1)} out of 5, from ${data.summary.count} ${data.summary.count === 1 ? "family" : "families"}`;
+        s.hidden = false;
+      });
+      lists.forEach((list) => {
+        list.replaceChildren(...data.reviews.slice(0, Number(list.dataset.limit) || 3).map((rv) => {
+          // textContent only: visitor text is never inserted as HTML
+          const fig = document.createElement("figure"); fig.className = "card review-card";
+          const st = document.createElement("div"); st.className = "stars-show"; st.textContent = stars(rv.rating);
+          st.setAttribute("aria-label", `${rv.rating} out of 5 stars`);
+          const bq = document.createElement("blockquote"); bq.className = "review";
+          const p = document.createElement("p"); p.textContent = `“${rv.message}”`; bq.append(p);
+          const cap = document.createElement("figcaption"); cap.className = "small muted";
+          cap.textContent = `${rv.name}${rv.town ? ", " + rv.town : ""} · ${rv.date}`;
+          fig.append(st, bq, cap); return fig;
+        }));
+      });
+    }).catch(() => {});
+  }
+
   const q = $("#q");
   if (q) {
     const cards = $$(".notice-card");

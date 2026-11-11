@@ -40,7 +40,7 @@ Shows open requests, most urgent first. The other admin commands are `pending`, 
 npm test
 ```
 
-Runs the database and validation tests.
+Runs three test suites (Node's built-in test runner, no packages): the database and form validation, the Cloudflare Worker end to end against a real SQLite database standing in for D1, and the built website (links, images, labels, page structure, kind wording).
 
 ## What's here
 
@@ -54,7 +54,8 @@ Runs the database and validation tests.
 | **E.** Images: shot list, rules, credits | [docs/06-images-shot-list.md](docs/06-images-shot-list.md), [site/IMAGE_CREDITS.md](site/IMAGE_CREDITS.md) |
 | **F.** Traffic plan: GBP, schema, keywords, speed, analytics | [docs/07-traffic-plan.md](docs/07-traffic-plan.md) |
 | Free hosting with working forms (Cloudflare Workers + D1 SQLite) | [docs/08-hosting.md](docs/08-hosting.md) |
-| The website (21 pages) | [site/src/](site/src/) |
+| The website (23 pages) | [site/src/](site/src/) |
+| Prompt for the next round of improvements (DevOps + web) | [docs/prompts/website-enhancement-prompt.md](docs/prompts/website-enhancement-prompt.md) |
 
 ## How the site is built
 
@@ -67,7 +68,7 @@ site/
   admin.mjs            ← staff CLI: queue, moderation, CSV export, GDPR purge
   db/                  ← schema.sql (SQLite / Cloudflare D1), store.mjs (shared queries), adapters
   worker.js, functions/ ← Cloudflare Worker: the same forms API on D1
-  test/                ← node --test suites
+  test/                ← node --test suites: store (database), worker (API + D1), site (built pages)
   src/partials/        ← layout, head (FuneralHome JSON-LD), header, footer, consent, form guard
   src/assets/          ← style.css, main.js, generated WebP images
 tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
@@ -75,6 +76,8 @@ tools/generate-images.py ← draws the CC0 placeholder artwork (3 sizes each)
 
 - **No frameworks, no web fonts, no third-party scripts by default.** Analytics loads only after cookie consent, and the map only on request.
 - **Quality checks run on this build:** Lighthouse mobile scored 100 for performance, accessibility, best practices and SEO on the 12 key pages; there were no console errors and no horizontal scroll at phone width; all form paths were tested end to end.
+- **Reviews:** families leave a 1–5 star review at `/reviews/`; it is saved to the database and shown on the home page and `/reviews/` only after staff approve it (`npm run admin -- reviews`, then `approve-review <id>`; on Cloudflare see docs/08-hosting.md).
+- **Database health:** `GET /api/health` reports whether the Worker can reach D1. The Worker creates any missing tables itself, so a new database needs no setup.
 - **Going live for free:** Cloudflare Workers + D1. The same validation and SQL run there; see [docs/08-hosting.md](docs/08-hosting.md).
 - **Dílis hand-off:** add a POST to the Dílis intake API next to `store.save()` in `server.mjs` and `functions/api/forms/[id].js`.
 

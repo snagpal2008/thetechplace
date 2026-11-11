@@ -13,7 +13,7 @@
 ## One-time setup (about 15 minutes, all in a web browser)
 
 1. **Create a free account** at dash.cloudflare.com.
-2. **Create the database.** Go to *Storage & Databases → D1 SQL Database → Create*, name it `funeral-db`, and create it. Open its **Console** tab, paste the whole of `site/db/schema.sql`, and click *Execute*.
+2. **Create the database.** Go to *Storage & Databases → D1 SQL Database → Create*, name it `funeral-db`, and create it. The Worker creates any missing tables itself on its first request (every statement in `site/db/schema.sql` is `CREATE … IF NOT EXISTS`), so there is nothing to paste. To check, open `https://<your-site>/api/health`: it should say `"database": "connected"` and list four tables.
 3. **Copy the database ID.** It is shown on the database's page (a long code like `1a2b3c4d-…`). Put it in `site/wrangler.toml` as `database_id = "…"` and commit it. The ID is not a secret.
 4. **Connect the site.** Go to *Workers & Pages → Create application → Import a repository*, choose GitHub and `snagpal2008/thetechplace`, and enter:
    - Project name: `thetechplace` (must match `name` in `site/wrangler.toml`; it becomes the web address)
@@ -45,10 +45,12 @@ Every form except condolences sends an email to **snagpal2008@gmail.com** throug
 | See open requests | `npx wrangler d1 execute funeral-db --remote --command "SELECT substr(id,1,8) ref, form, respond_by, json_extract(data,'$.name') name FROM submissions WHERE status='new' ORDER BY respond_by"` |
 | Mark one as dealt with | `npx wrangler d1 execute funeral-db --remote --command "UPDATE submissions SET status='contacted' WHERE id LIKE 'ab12cd34%'"` |
 | Condolences waiting | `npx wrangler d1 execute funeral-db --remote --command "SELECT substr(id,1,8), notice, name, message FROM condolences WHERE status='pending'"` |
+| Reviews waiting | `npx wrangler d1 execute funeral-db --remote --command "SELECT substr(id,1,8), rating, name, town, message FROM reviews WHERE status='pending'"` |
+| Approve a review | `npx wrangler d1 execute funeral-db --remote --command "UPDATE reviews SET status='approved', moderated_at=datetime('now') WHERE id LIKE 'ab12cd34%'"` |
 | Approve a condolence | `npx wrangler d1 execute funeral-db --remote --command "UPDATE condolences SET status='approved', moderated_at=datetime('now') WHERE id LIKE 'ab12cd34%'"` |
 | Monthly GDPR clean-up | `npx wrangler d1 execute funeral-db --remote --file=db/purge.sql` |
 
-You can also run any of these SQL lines in the D1 **Console** tab in the dashboard, with no command line needed. Locally, the same jobs are `npm run admin -- queue | pending | approve <id> | export <form> | purge`.
+You can also run any of these SQL lines in the D1 **Console** tab in the dashboard, with no command line needed. Locally, the same jobs are `npm run admin -- queue | pending | approve <id> | reviews | approve-review <id> | export <form> | purge`.
 
 There is deliberately **no admin web page** on the public site: no login means nothing to break into. A proper staff screen belongs in Dílis.
 
@@ -67,3 +69,9 @@ Buy the domain (for a `.ie`, from an IE Domain Registry-accredited registrar), t
 ## Alternative: GitHub Pages (pages only, no forms)
 
 `.github/workflows/deploy-pages.yml` can publish a static copy to `https://snagpal2008.github.io/thetechplace/`. Forms cannot work there because there is no server or database, so use it only as a preview.
+
+## Preview deploys and the database
+
+Every push to a branch other than `master` gets its own preview link (Cloudflare → Workers & Pages → thetechplace → **Deployments**). Preview versions use the **same D1 database** as the live site, because Cloudflare shares a Worker's bindings between its versions. That is fine for checking pages, but test form submissions from a preview land in the real database: delete them afterwards, or create a second database (for example `funeral-db-dev`) and point a separate dev Worker at it.
+
+After every deploy, open `/api/health` on that address to confirm the Worker can reach the database.

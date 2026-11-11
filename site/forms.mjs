@@ -72,6 +72,15 @@ export const FORMS = {
     moderated: true,
     message: "Thank you for your kind words. Your message will appear once it has been checked — usually within a few hours."
   },
+  review: {
+    title: "Family review",
+    fields: [req("name", { max: 60 }), f("town", { max: 80 }), req("email", { pattern: EMAIL }),
+      req("rating", { enum: ["1", "2", "3", "4", "5"] }), f("service", { enum: ["burial", "cremation", "direct-cremation", "pre-planning", "other"] }),
+      req("message", { max: 1500 }), req("publish_ok", { enum: ["yes"] }), consent],
+    notify: ["queue:moderation"], owner: "Office (moderation)", slaHours: 48, retention: "Published until the family asks us to remove it. Emails never published, deleted after 12 months.",
+    moderated: true,
+    message: "Thank you for taking the time to write to us. Your review will appear once we have read it, usually within two working days."
+  },
   appointment: {
     title: "Appointment booking",
     fields: [req("name", { max: 100 }), req("phone", { pattern: PHONE }), req("email", { pattern: EMAIL }),

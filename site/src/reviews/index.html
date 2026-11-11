@@ -1,0 +1,55 @@
+<!--title: Reviews from Families | {{name}}, {{town}}-->
+<!--description: Read what families say about {{name}} in {{town}}, {{countyFull}}, and share your own experience. Every review is read before it is published.-->
+<section class="hero">
+  <img class="hero-img" src="/assets/img/lilies-white-960.webp" srcset="/assets/img/lilies-white-480.webp 480w, /assets/img/lilies-white-960.webp 960w, /assets/img/lilies-white-1600.webp 1600w" sizes="100vw" width="1600" height="900" alt="" fetchpriority="high">
+  <div class="wrap"><div class="hero-text">
+    <p class="eyebrow">In their own words</p>
+    <h1>What families say about us</h1>
+    <p class="lead">Every family we look after is invited to tell us how we did. We publish kind words and honest criticism alike, and we read every message ourselves.</p>
+    <p class="rating-summary" data-review-summary hidden></p>
+  </div></div>
+</section>
+
+<section class="block" aria-labelledby="list-title">
+  <div class="wrap">
+    <h2 id="list-title">Reviews</h2>
+    <div class="grid grid-3" data-reviews data-limit="60">
+      <!--#include sample-reviews-->
+    </div>
+    <p class="small muted" style="margin-top:1.25rem">You can also read our reviews on <a href="{{googleReviewsUrl}}" rel="noopener">Google</a>.</p>
+  </div>
+</section>
+
+<section class="block alt" id="write" aria-labelledby="write-title">
+  <div class="wrap narrow">
+    <h2 id="write-title">Share your experience</h2>
+    <p>If we looked after someone you love, we would be grateful to hear from you, whenever you feel ready. Your words help other families who are facing the same decisions.</p>
+    <form class="form" data-form="review" action="/api/forms/review" method="post">
+      <!--#include form-guard-->
+      <fieldset class="stars">
+        <legend>Your overall rating</legend>
+        <div class="star-input">
+          <input type="radio" id="r5" name="rating" value="5" required><label for="r5" title="5 stars">★<span class="visually-hidden">5 stars, excellent</span></label>
+          <input type="radio" id="r4" name="rating" value="4"><label for="r4" title="4 stars">★<span class="visually-hidden">4 stars, good</span></label>
+          <input type="radio" id="r3" name="rating" value="3"><label for="r3" title="3 stars">★<span class="visually-hidden">3 stars, fair</span></label>
+          <input type="radio" id="r2" name="rating" value="2"><label for="r2" title="2 stars">★<span class="visually-hidden">2 stars, poor</span></label>
+          <input type="radio" id="r1" name="rating" value="1"><label for="r1" title="1 star">★<span class="visually-hidden">1 star, very poor</span></label>
+        </div>
+      </fieldset>
+      <div class="field-row">
+        <div class="field"><label for="rv-name">Your name as it should appear</label><input id="rv-name" name="name" type="text" autocomplete="name" required maxlength="60" placeholder="e.g. Áine M."></div>
+        <div class="field"><label for="rv-town">Your town <span class="opt">(optional)</span></label><input id="rv-town" name="town" type="text" maxlength="80"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="rv-email">Email <span class="opt">(never shown)</span></label><input id="rv-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="rv-service">The funeral was <span class="opt">(optional)</span></label>
+          <select id="rv-service" name="service"><option value="">Prefer not to say</option><option value="burial">A burial</option><option value="cremation">A cremation</option><option value="direct-cremation">A direct cremation</option><option value="pre-planning">Pre-planning, not a funeral</option><option value="other">Something else</option></select></div>
+      </div>
+      <div class="field"><label for="rv-msg">Your review</label><textarea id="rv-msg" name="message" required maxlength="1500"></textarea><p class="hint">Up to 1,500 characters. Please don't include anyone's private details.</p></div>
+      <label class="choice consent"><input type="checkbox" name="publish_ok" value="yes" required> <span>I agree that my name, town, rating and review may be published on this website.</span></label>
+      <!--#include consent-->
+      <div><button class="btn" type="submit">Send my review</button></div>
+    </form>
+    <p class="small muted" style="margin-top:1rem">If something went wrong and you would like us to put it right, please use our <a href="/feedback/">feedback and complaints form</a> and the managing director will contact you personally.</p>
+  </div>
+</section>

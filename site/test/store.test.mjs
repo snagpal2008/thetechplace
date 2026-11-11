@@ -44,7 +44,7 @@ test("purge deletes expired data and clears old condolence emails", async () => 
   await s.save("feedback", FORMS.feedback, { kind: "complaint", message: "m" }, new Date()); // still within 7 years
   await s.save("condolence", FORMS.condolence, { notice: "n", name: "C", email: "c@x.ie", message: "m" }, longAgo);
   const r = await s.purge();
-  assert.deepEqual(r, { submissionsDeleted: 1, rejectedCondolencesDeleted: 0, emailsCleared: 1 });
+  assert.deepEqual(r, { submissionsDeleted: 1, rejectedCondolencesDeleted: 0, emailsCleared: 1, rejectedReviewsDeleted: 0 });
   assert.equal((await s.openQueue()).length, 1);
   s.close();
 });

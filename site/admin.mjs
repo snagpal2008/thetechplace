@@ -3,6 +3,9 @@
 //   node admin.mjs pending               → condolences waiting for approval
 //   node admin.mjs approve <id>          → publish a condolence (id or first 8+ characters)
 //   node admin.mjs reject <id>           → hide a condolence
+//   node admin.mjs reviews               → family reviews waiting for approval
+//   node admin.mjs approve-review <id>   → publish a review
+//   node admin.mjs reject-review <id>    → hide a review
 //   node admin.mjs export <form> [file]  → CSV export of one form's submissions
 //   node admin.mjs purge                 → delete data past its retention date (run daily)
 import { writeFileSync } from "node:fs";
@@ -43,8 +46,21 @@ switch (cmd) {
     process.exitCode = n ? 0 : 1;
     break;
   }
+  case "reviews": {
+    const rows = await store.pendingReviews();
+    if (!rows.length) console.log("No reviews waiting.");
+    for (const r of rows) console.log(`${short(r.id)}  ${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}  ${safe(r.name)}${r.town ? ", " + safe(r.town) : ""}\n          ${safe(r.message)}\n`);
+    break;
+  }
+  case "approve-review":
+  case "reject-review": {
+    const approve = cmd === "approve-review";
+    const n = await store.moderate(arg || "", approve ? "approved" : "rejected", new Date(), "review");
+    console.log(n ? `${approve ? "Approved" : "Rejected"} review ${arg}` : "No single review matches that id (use at least 8 characters).");
+    break;
+  }
   case "export": {
-    if (!FORMS[arg] || arg === "condolence") { console.error(`Usage: node admin.mjs export <${Object.keys(FORMS).filter((f) => f !== "condolence").join("|")}> [file.csv]`); process.exit(1); }
+    if (!FORMS[arg] || FORMS[arg].moderated) { console.error(`Usage: node admin.mjs export <${Object.keys(FORMS).filter((f) => !FORMS[f].moderated).join("|")}> [file.csv]`); process.exit(1); }
     const db = new DatabaseSync(store.path, { readOnly: true });
     const rows = db.prepare("SELECT id, received_at, status, data FROM submissions WHERE form = ? ORDER BY received_at").all(arg);
     const fields = FORMS[arg].fields.map((f) => f.name);
@@ -62,6 +78,6 @@ switch (cmd) {
     console.log(await store.purge());
     break;
   default:
-    console.log("Usage: node admin.mjs <queue|pending|approve <id>|reject <id>|export <form> [file]|purge>");
+    console.log("Usage: node admin.mjs <queue|pending|approve <id>|reject <id>|reviews|approve-review <id>|reject-review <id>|export <form> [file]|purge>");
 }
 store.close();

@@ -1,11 +1,11 @@
-# Checks every pull request and every push to main: tests + both builds must pass.
-# Turn on "Require status checks to pass" for main (Settings → Branches) so a red check blocks the merge.
+# Checks every pull request and every push to master: tests + both builds must pass.
+# Turn on "Require status checks to pass" for master (Settings → Branches) so a red check blocks the merge.
 name: CI
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 permissions:
   contents: read
