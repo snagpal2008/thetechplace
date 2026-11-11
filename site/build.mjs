@@ -98,4 +98,7 @@ writeFileSync(
     pages.sort().map((p) => `  <url><loc>${config.domain}/${p}</loc><lastmod>${today}</lastmod></url>`).join("\n") +
     `\n</urlset>\n`
 );
+// version.txt: open /version.txt on any deploy to see when it was built (and from which commit on Cloudflare).
+writeFileSync(join(dist, "version.txt"),
+  `built: ${new Date().toISOString()}\ncommit: ${process.env.WORKERS_CI_COMMIT_SHA || process.env.GITHUB_SHA || "local"}\nbranch: ${process.env.WORKERS_CI_BRANCH || process.env.GITHUB_REF_NAME || "local"}\npages: ${pages.length}\n`);
 console.log(`Built ${pages.length} pages into ${STATIC ? "dist-static/ (open dist-static/index.html directly)" : "dist/"}`);
