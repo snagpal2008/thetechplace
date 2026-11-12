@@ -48,7 +48,7 @@ export async function setSetting(db: DB, key: SettingKey, value: string) {
 export async function registerAccount(
   db: DB,
   input: {
-    kind: "director" | "vendor";
+    kind: "director" | "vendor" | "admin";
     orgName: string;
     name: string;
     email: string;
@@ -70,7 +70,7 @@ export async function registerAccount(
     const [org] = await tx
       .insert(organizations)
       .values({
-        type: input.kind === "vendor" ? "vendor" : "funeral_home",
+        type: input.kind === "vendor" ? "vendor" : input.kind === "admin" ? "platform" : "funeral_home",
         name: input.orgName.trim(),
         email,
         phone: input.phone || null,
@@ -96,6 +96,11 @@ export async function authenticate(db: DB, email: string, password: string) {
     .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`);
   if (!u) return null;
   return (await verifyPassword(password, u.passwordHash)) ? u : null;
+}
+
+export async function hasAdmin(db: DB): Promise<boolean> {
+  const [row] = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1);
+  return Boolean(row);
 }
 
 /* ---------------- cases ---------------- */

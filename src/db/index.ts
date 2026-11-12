@@ -4,42 +4,27 @@ import * as schema from "./schema";
 
 export type DB = NodePgDatabase<typeof schema>;
 
-const isWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
-
-/** Connection string: DATABASE_URL locally / in scripts, Hyperdrive binding on Cloudflare. */
-async function connectionString(): Promise<string> {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const { env } = await getCloudflareContext({ async: true });
-  return (env as unknown as CloudflareEnv).HYPERDRIVE.connectionString;
-}
-
-// Node (local dev, scripts): one shared pool for the process.
-const globalForDb = globalThis as unknown as { __dilisPool?: Pool };
-
-function nodeDb(url: string): DB {
-  globalForDb.__dilisPool ??= new Pool({ connectionString: url, max: 10 });
-  return drizzle(globalForDb.__dilisPool, { schema });
-}
-
-// Workers: sockets can't be shared across requests, so build one client per request,
-// keyed on that request's ExecutionContext. Hyperdrive does the real pooling at the edge.
-const perRequest = new WeakMap<object, DB>();
-
-async function workersDb(): Promise<DB> {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const { env, ctx } = await getCloudflareContext({ async: true });
-  const hit = perRequest.get(ctx);
-  if (hit) return hit;
-  const pool = new Pool({ connectionString: (env as unknown as CloudflareEnv).HYPERDRIVE.connectionString, max: 5 });
-  const db = drizzle(pool, { schema });
-  perRequest.set(ctx, db);
-  return db;
-}
+/*
+ * One pool per container instance. On Cloud Run, DATABASE_URL points at the
+ * Cloud SQL unix socket, e.g.
+ *   postgres://dilis_app:PASS@/dilis?host=/cloudsql/PROJECT:REGION:INSTANCE
+ * Keep DB_POOL_MAX x max-instances below the instance's connection limit.
+ */
+const globalForDb = globalThis as unknown as { __dilisDb?: DB };
 
 export async function getDb(): Promise<DB> {
-  if (isWorkers && !process.env.DATABASE_URL) return workersDb();
-  return nodeDb(await connectionString());
+  if (!globalForDb.__dilisDb) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is not set");
+    const pool = new Pool({
+      connectionString: url,
+      max: Number(process.env.DB_POOL_MAX ?? 5),
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+    });
+    globalForDb.__dilisDb = drizzle(pool, { schema });
+  }
+  return globalForDb.__dilisDb;
 }
 
 export { schema };

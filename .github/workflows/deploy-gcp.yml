@@ -1,0 +1,108 @@
+name: Deploy to Google Cloud
+
+# One-time prerequisite: run infra/gcp-setup.sh in Cloud Shell and add the
+# repository *variables* it prints (no keys or secrets are stored in GitHub).
+
+on:
+  push:
+    branches: [dilis-portal-postgres]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-gcp
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write   # keyless auth to Google Cloud
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION || 'europe-west1' }}
+  SQL_INSTANCE: ${{ vars.GCP_SQL_INSTANCE || 'dilis-pg' }}
+  SERVICE: dilis-portal
+  APP_URL: ${{ vars.APP_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check configuration
+        id: preflight
+        run: |
+          if [ -z "$PROJECT_ID" ] || [ -z "${{ vars.GCP_WIF_PROVIDER }}" ] || [ -z "${{ vars.GCP_DEPLOY_SA }}" ]; then
+            echo "::warning::Skipping deploy — run infra/gcp-setup.sh and add repository variables GCP_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOY_SA."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.preflight.outputs.ready == 'true'
+
+      - uses: google-github-actions/auth@v2
+        if: steps.preflight.outputs.ready == 'true'
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.preflight.outputs.ready == 'true'
+
+      - name: Build and push image
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/dilis/portal:${GITHUB_SHA::12}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Run database migrations (Cloud Run Job)
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          gcloud run jobs deploy dilis-migrate \
+            --image "$IMAGE" --region "$REGION" \
+            --service-account "dilis-run@$PROJECT_ID.iam.gserviceaccount.com" \
+            --set-cloudsql-instances "$PROJECT_ID:$REGION:$SQL_INSTANCE" \
+            --set-secrets DATABASE_URL=DATABASE_URL:latest \
+            --command node --args scripts/migrate.mjs \
+            --max-retries 0 --task-timeout 300s --quiet
+          gcloud run jobs execute dilis-migrate --region "$REGION" --wait
+
+      - name: Deploy Cloud Run service
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          SECRETS="DATABASE_URL=DATABASE_URL:latest,AUTH_SECRET=AUTH_SECRET:latest"
+          for s in SETUP_TOKEN STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET; do
+            if gcloud secrets describe "$s" >/dev/null 2>&1; then SECRETS="$SECRETS,$s=$s:latest"; fi
+          done
+          ENV_VARS="DB_POOL_MAX=5"
+          [ -n "$APP_URL" ] && ENV_VARS="$ENV_VARS,APP_URL=$APP_URL"
+          # Sized for ~50 funeral homes / 1,000 vendors: 0–5 instances x 80 concurrent requests.
+          # Pool 5 x 5 instances = 25 DB connections, well under the Cloud SQL limit.
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" --region "$REGION" \
+            --service-account "dilis-run@$PROJECT_ID.iam.gserviceaccount.com" \
+            --add-cloudsql-instances "$PROJECT_ID:$REGION:$SQL_INSTANCE" \
+            --set-secrets "$SECRETS" --set-env-vars "$ENV_VARS" \
+            --port 8080 --cpu 1 --memory 512Mi \
+            --min-instances 0 --max-instances 5 --concurrency 80 \
+            --allow-unauthenticated --quiet
+
+      - name: Smoke test and summary
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format 'value(status.url)')
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$URL/api/health"; then echo; break; fi
+            [ "$i" = 6 ] && { echo "::error::Health check failed"; exit 1; }
+            sleep 10
+          done
+          {
+            echo "## Dílis portal deployed to Google Cloud Run"
+            echo ""
+            echo "- Site: ${APP_URL:-$URL}"
+            echo "- First visit: ${APP_URL:-$URL}/setup (needs the setup code printed by gcp-setup.sh)"
+            echo "- Image: \`$IMAGE\`"
+          } >> "$GITHUB_STEP_SUMMARY"

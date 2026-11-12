@@ -30,4 +30,27 @@ jobs:
       - run: npm run typecheck
       - run: npm run db:migrate
       - run: npm test
-      - run: npm run cf:build
+      - run: npm run build
+
+  container:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dilis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build -t dilis-portal:ci .
+      - name: Migrate and boot the container, check health
+        run: |
+          DB=postgres://postgres:postgres@localhost:5432/dilis
+          docker run --rm --network host -e DATABASE_URL=$DB dilis-portal:ci node scripts/migrate.mjs
+          docker run -d --name app --network host -e DATABASE_URL=$DB -e AUTH_SECRET=ci-secret-0123456789abcdef dilis-portal:ci
+          for i in $(seq 1 30); do curl -fsS localhost:8080/api/health && exit 0; sleep 2; done
+          docker logs app; exit 1

@@ -17,8 +17,14 @@ export function stripe(): Stripe {
   return client;
 }
 
-export function appUrl(): string {
-  return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+/** Public base URL: APP_URL if configured, otherwise derived from the current request. */
+export async function appUrl(): Promise<string> {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  const { headers } = await import("next/headers");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
 }
 
 /* ---------- Connect: vendor onboarding (Express accounts) ---------- */
@@ -38,11 +44,12 @@ export async function vendorOnboardingLink(db: DB, vendor: Organization): Promis
     accountId = acct.id;
     await db.update(organizations).set({ stripeAccountId: accountId }).where(eq(organizations.id, vendor.id));
   }
+  const base = await appUrl();
   const link = await s.accountLinks.create({
     account: accountId,
     type: "account_onboarding",
-    refresh_url: `${appUrl()}/vendor/payments?refresh=1`,
-    return_url: `${appUrl()}/vendor/payments?return=1`,
+    refresh_url: `${base}/vendor/payments?refresh=1`,
+    return_url: `${base}/vendor/payments?return=1`,
   });
   return link.url;
 }
@@ -67,6 +74,7 @@ export async function createInvoiceCheckout(db: DB, inv: Invoice, vendor: Organi
   if (!vendor.stripeAccountId || !vendor.stripeChargesEnabled)
     throw new DomainError("This vendor hasn't finished Stripe onboarding yet — pay by bank transfer or ask them to connect Stripe");
 
+  const base = await appUrl();
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
     customer_email: payerEmail,
@@ -87,8 +95,8 @@ export async function createInvoiceCheckout(db: DB, inv: Invoice, vendor: Organi
       metadata: { invoiceId: inv.id, invoiceNumber: inv.number },
     },
     metadata: { invoiceId: inv.id },
-    success_url: `${appUrl()}/invoices/${inv.id}?checkout={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/invoices/${inv.id}?cancelled=1`,
+    success_url: `${base}/invoices/${inv.id}?checkout={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/invoices/${inv.id}?cancelled=1`,
   });
   await db.update(invoices).set({ stripeCheckoutSessionId: session.id }).where(eq(invoices.id, inv.id));
   return session.url!;
