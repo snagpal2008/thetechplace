@@ -19,6 +19,7 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SETUP_TOKEN: ${{ secrets.SETUP_TOKEN }}
       APP_URL: ${{ vars.APP_URL }}
       D1_NAME: dilis-db
     steps:
@@ -78,6 +79,8 @@ jobs:
             echo "Generating AUTH_SECRET"
             openssl rand -base64 48 | npx wrangler secret put AUTH_SECRET
           fi
+          # Optional: protect /setup with a code (repository secret SETUP_TOKEN)
+          if [ -n "$SETUP_TOKEN" ]; then printf '%s' "$SETUP_TOKEN" | npx wrangler secret put SETUP_TOKEN; fi
 
       - name: Summary
         if: steps.preflight.outputs.ready == 'true'

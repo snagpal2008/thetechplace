@@ -13,6 +13,13 @@ export default async function Setup() {
   return (
     <AuthCard title="Set up your portal" subtitle="Create the platform administrator. This page disappears once an admin exists.">
       <ActionForm action={setupAction} className="space-y-4">
+        {process.env.SETUP_TOKEN && (
+          <div>
+            <label className="label" htmlFor="setupToken">Setup code</label>
+            <input id="setupToken" name="setupToken" required className="input" autoComplete="off" />
+            <p className="mt-1.5 text-xs text-ink-mute">Shown in the deploy run summary's instructions (repository secret SETUP_TOKEN).</p>
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="name">Your name</label>
           <input id="name" name="name" required className="input" autoComplete="name" />

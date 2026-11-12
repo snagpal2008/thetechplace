@@ -34,6 +34,7 @@ Funeral directors open a case, order services from vetted vendors (florists, lim
 4. **GitHub secrets** — repo → Settings → Secrets and variables → Actions → *New repository secret*:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
+   - `SETUP_TOKEN` *(recommended)* — any code you choose; `/setup` will ask for it, so nobody else can claim the admin account before you do
 5. **Run** — Actions → *Deploy to Cloudflare* → *Run workflow* (or push to `dilis-portal`).
    The workflow creates the `dilis-db` D1 database (EU region), applies migrations, deploys the Worker and generates `AUTH_SECRET`. The run summary shows the site URL.
 6. **First visit** — open `https://<site>/setup`: create your admin account and optionally load demo data. The setup page locks itself once an admin exists.

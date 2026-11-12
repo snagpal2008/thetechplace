@@ -99,6 +99,8 @@ export async function setupAction(_: Result, fd: FormData): Promise<Result> {
   const res = await guard(async () => {
     const db = await getDb();
     if (await hasAdmin(db)) throw new DomainError("Setup is already complete — sign in instead.");
+    const token = process.env.SETUP_TOKEN;
+    if (token && str(fd, "setupToken") !== token) throw new DomainError("Setup code is incorrect");
     const password = String(fd.get("password") ?? "");
     if (password.length < 10) throw new DomainError("Admin password must be at least 10 characters");
     const { user } = await registerAccount(db, {
