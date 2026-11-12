@@ -48,7 +48,7 @@ Tests: `npm test` (unit tests always; the full order→invoice→payment integra
 
 1. **Database** — create a Postgres database (Neon free tier works) and note its connection string.
 2. **Migrate** — `DATABASE_URL=<conn> npm run db:migrate`
-3. **Hyperdrive** — `npx wrangler hyperdrive create dilis-db --connection-string="<conn>"` and paste the returned id into `wrangler.jsonc` (`REPLACE_WITH_HYPERDRIVE_ID`).
+3. **Hyperdrive** — `npx wrangler hyperdrive create dilis-db --connection-string="<conn>"` and save the returned id as the `HYPERDRIVE_ID` repo secret (or paste it into `wrangler.jsonc` for local deploys).
 4. **Secrets**
    ```bash
    npx wrangler secret put AUTH_SECRET            # openssl rand -base64 32
@@ -56,14 +56,27 @@ Tests: `npm test` (unit tests always; the full order→invoice→payment integra
    npx wrangler secret put STRIPE_WEBHOOK_SECRET  # whsec_… (step 6)
    ```
    Set `APP_URL` in `wrangler.jsonc` `vars` to your public URL.
-5. **Deploy** — `npm run deploy` (or push to `main` with the GitHub Action below).
+5. **Deploy** — `npm run deploy` locally, or push to `dilis-portal` with the GitHub Action below.
 6. **Stripe** — enable Connect in the dashboard (platform in Ireland, Express accounts). Add a webhook endpoint `https://<your-domain>/api/stripe/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `account.updated` (tick "Listen to events on Connected accounts" for `account.updated`).
 7. **First admin** — create one by seeding, or insert a `platform` organization + `admin` user (hash with `hashPassword` from `src/lib/password.ts`).
 8. **Custom domain** — add it under Workers → Settings → Domains & Routes.
 
 ### GitHub Actions
 
-`.github/workflows/ci.yml` type-checks, tests (against a Postgres service) and builds the Worker on every push/PR. `deploy.yml` migrates and deploys on push to `main` and needs these repo secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `DATABASE_URL`.
+- `ci.yml` — type-check, tests (against a Postgres service) and Worker build on every push/PR.
+- `deploy.yml` — on every push to **`dilis-portal`** (or run manually): migrates the database, then builds and deploys the Worker.
+
+Add these under **Settings → Secrets and variables → Actions** (until they exist, deploy runs are skipped with a warning):
+
+| Name | Type | Value |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | secret | API token with the *Edit Cloudflare Workers* template |
+| `CLOUDFLARE_ACCOUNT_ID` | secret | From the Cloudflare dashboard sidebar |
+| `DATABASE_URL` | secret | Postgres connection string (used for migrations) |
+| `HYPERDRIVE_ID` | secret | Id from `wrangler hyperdrive create` — injected into `wrangler.jsonc` at deploy |
+| `APP_URL` | variable | Public URL, e.g. `https://portal.funeraldirector.ie` (optional) |
+
+Worker runtime secrets (`AUTH_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) are set once with `npx wrangler secret put` and persist across deploys.
 
 ## How the money works
 
