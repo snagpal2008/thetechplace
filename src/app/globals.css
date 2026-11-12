@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-paper text-ink font-sans antialiased; }
+  h1, h2, h3 { @apply font-serif text-ink; letter-spacing: -0.01em; }
+  ::selection { @apply bg-sage-light; }
+}
+
+@layer components {
+  .card { @apply bg-paper-card border border-paper-line rounded-xl; }
+  .label { @apply block text-xs font-semibold uppercase tracking-wider text-ink-mute mb-1.5; }
+  .input {
+    @apply w-full rounded-lg border border-paper-line bg-white px-3 py-2.5 text-[15px] text-ink
+      placeholder:text-ink-mute/60 focus:outline-none focus:ring-2 focus:ring-sage/30 focus:border-sage;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold
+      transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+  }
+  .btn-primary { @apply btn bg-sage text-white hover:bg-sage-dark; }
+  .btn-secondary { @apply btn bg-white border border-paper-line text-ink hover:bg-paper; }
+  .btn-danger { @apply btn bg-white border border-alert/30 text-alert hover:bg-alert-light; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .link { @apply text-sage-dark underline decoration-sage/30 underline-offset-2 hover:decoration-sage; }
+  .table { @apply w-full text-sm; }
+  .table th { @apply text-left text-xs font-semibold uppercase tracking-wider text-ink-mute px-4 py-3 border-b border-paper-line; }
+  .table td { @apply px-4 py-3 border-b border-paper-line align-top; }
+  .table tr:last-child td { @apply border-b-0; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.14em] text-brass; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .card { border: none; }
+}

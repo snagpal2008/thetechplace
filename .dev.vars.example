@@ -1,0 +1,7 @@
+# Used by `npm run preview` (wrangler / workerd). Copy to .dev.vars.
+# No DATABASE_URL here, so the app uses the HYPERDRIVE binding from wrangler.jsonc.
+AUTH_SECRET=change-me-to-a-long-random-string
+APP_URL=http://localhost:8787
+NEXTJS_ENV=production
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
