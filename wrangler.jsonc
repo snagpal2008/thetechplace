@@ -9,20 +9,20 @@
     "binding": "ASSETS"
   },
   "observability": { "enabled": true },
-  // Hyperdrive pools connections to your Postgres (Neon / Supabase / RDS).
-  // Create it with:  npx wrangler hyperdrive create dilis-db --connection-string="postgres://..."
-  // then paste the returned id below.
-  "hyperdrive": [
+  // Cloudflare D1 (serverless SQLite). The deploy workflow creates the database
+  // if needed and fills in database_id automatically.
+  "d1_databases": [
     {
-      "binding": "HYPERDRIVE",
-      "id": "REPLACE_WITH_HYPERDRIVE_ID",
-      "localConnectionString": "postgres://postgres:postgres@localhost:5432/dilis"
+      "binding": "DB",
+      "database_name": "dilis-db",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "drizzle"
     }
   ],
   "vars": {
-    "APP_URL": "https://dilis-portal.example.workers.dev",
+    "APP_URL": "",
     "PLATFORM_NAME": "Dílis"
   }
-  // Secrets (set with `npx wrangler secret put NAME`):
-  //   AUTH_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  // Secrets (`npx wrangler secret put NAME`): AUTH_SECRET (auto-created by the
+  // deploy workflow), STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET (optional).
 }

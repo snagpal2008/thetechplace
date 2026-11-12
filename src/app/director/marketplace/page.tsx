@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, asc, eq, sql } from "drizzle-orm";
-import { organizations, services, vendorCategoryEnum, type VendorCategory } from "@/db/schema";
+import { organizations, services, VENDOR_CATEGORIES, type VendorCategory } from "@/db/schema";
 import { current } from "@/lib/current";
 import { CATEGORY_LABELS } from "@/lib/labels";
 import { Empty, Money, PageHeader } from "@/components/ui";
@@ -10,13 +10,13 @@ export const metadata = { title: "Marketplace" };
 export default async function Marketplace({ searchParams }: { searchParams: Promise<{ category?: string; q?: string; case?: string }> }) {
   const sp = await searchParams;
   const { db } = await current("director");
-  const category = vendorCategoryEnum.enumValues.includes(sp.category as VendorCategory) ? (sp.category as VendorCategory) : undefined;
+  const category = (VENDOR_CATEGORIES as readonly string[]).includes(sp.category ?? "") ? (sp.category as VendorCategory) : undefined;
   const q = (sp.q ?? "").trim();
 
   const vendors = await db
     .select({
       v: organizations,
-      serviceCount: sql<number>`count(${services.id})::int`,
+      serviceCount: sql<number>`count(${services.id})`,
       fromCents: sql<number | null>`min(${services.unitPriceCents})`,
     })
     .from(organizations)
@@ -26,7 +26,7 @@ export default async function Marketplace({ searchParams }: { searchParams: Prom
         eq(organizations.type, "vendor"),
         eq(organizations.status, "approved"),
         category ? eq(organizations.category, category) : undefined,
-        q ? sql`(${organizations.name} ilike ${"%" + q + "%"} or ${organizations.description} ilike ${"%" + q + "%"})` : undefined,
+        q ? sql`(lower(${organizations.name}) like ${"%" + q.toLowerCase() + "%"} or lower(coalesce(${organizations.description}, '')) like ${"%" + q.toLowerCase() + "%"})` : undefined,
       ),
     )
     .groupBy(organizations.id)
@@ -59,7 +59,7 @@ export default async function Marketplace({ searchParams }: { searchParams: Prom
       </form>
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
         {chip(undefined, "All")}
-        {vendorCategoryEnum.enumValues.map((c) => chip(c, CATEGORY_LABELS[c]))}
+        {VENDOR_CATEGORIES.map((c) => chip(c, CATEGORY_LABELS[c]))}
       </div>
       {!vendors.length ? (
         <Empty title="No vendors match">Try another category, or check back as new suppliers are approved.</Empty>

@@ -15,7 +15,7 @@ export default async function Vendors({ searchParams }: { searchParams: Promise<
   const { db } = await current("admin");
   const filter = status === "pending" || status === "approved" || status === "suspended" ? status : undefined;
   const rows = await db
-    .select({ v: organizations, svc: sql<number>`count(${services.id})::int` })
+    .select({ v: organizations, svc: sql<number>`count(${services.id})` })
     .from(organizations)
     .leftJoin(services, eq(services.vendorOrgId, organizations.id))
     .where(and(eq(organizations.type, "vendor"), filter ? eq(organizations.status, filter) : undefined))

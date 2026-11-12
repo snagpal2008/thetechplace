@@ -1,7 +1,8 @@
-import { hashPassword, verifyPassword } from "./password";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import type { DB } from "@/db";
 import {
+  counters,
   funeralCases,
   invoiceLines,
   invoices,
@@ -12,16 +13,41 @@ import {
   services,
   settings,
   users,
+  type OrderStatus,
   type Role,
   type VendorCategory,
 } from "@/db/schema";
+import { ORDER_STATUS_LABELS } from "./labels";
 import { computeInvoiceTotals, lineNet, lineVat, PLATFORM_FEE_VAT_BPS } from "./money";
 import { nextStatus, ORDER_ACTIONS, type OrderAction } from "./order-flow";
-import { ORDER_STATUS_LABELS } from "./labels";
+import { hashPassword, verifyPassword } from "./password";
+
+/*
+ * D1 has no interactive transactions. Atomicity comes from:
+ *  - db.batch([...])            — statements run as one implicit transaction
+ *  - single-statement counters  — UPDATE … RETURNING for sequential numbers
+ *  - conditional updates        — UPDATE … WHERE status = <expected> (optimistic concurrency)
+ *  - unique indexes             — e.g. one invoice per order
+ */
 
 export type Actor = { uid: string; role: Role; orgId: string; name: string };
 
 export class DomainError extends Error {}
+
+const UUID = /^[0-9a-f-]{36}$/i;
+type Batch = [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]];
+
+/* ---------------- counters ---------------- */
+
+/** Atomically returns the next value for a named counter (starting at `start`). */
+export async function nextNumber(db: DB, key: string, start = 1): Promise<number> {
+  const [row] = await db
+    .insert(counters)
+    .values({ key, value: start })
+    .onConflictDoUpdate({ target: counters.key, set: { value: sql`${counters.value} + 1` } })
+    .returning({ value: counters.value });
+  return row.value;
+}
 
 /* ---------------- settings ---------------- */
 
@@ -45,10 +71,15 @@ export async function setSetting(db: DB, key: SettingKey, value: string) {
 
 /* ---------------- accounts ---------------- */
 
+export async function findUserByEmail(db: DB, email: string) {
+  const [u] = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase()));
+  return u ?? null;
+}
+
 export async function registerAccount(
   db: DB,
   input: {
-    kind: "director" | "vendor";
+    kind: "director" | "vendor" | "admin";
     orgName: string;
     name: string;
     email: string;
@@ -61,16 +92,18 @@ export async function registerAccount(
 ) {
   const email = input.email.trim().toLowerCase();
   if (input.password.length < 8) throw new DomainError("Password must be at least 8 characters");
-  const existing = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`);
-  if (existing.length) throw new DomainError("An account with this email already exists");
+  if (await findUserByEmail(db, email)) throw new DomainError("An account with this email already exists");
   if (input.kind === "vendor" && !input.category) throw new DomainError("Choose a service category");
 
+  const orgId = crypto.randomUUID();
+  const userId = crypto.randomUUID();
   const passwordHash = await hashPassword(input.password);
-  return db.transaction(async (tx) => {
-    const [org] = await tx
+  const [[org], [user]] = await db.batch([
+    db
       .insert(organizations)
       .values({
-        type: input.kind === "vendor" ? "vendor" : "funeral_home",
+        id: orgId,
+        type: input.kind === "vendor" ? "vendor" : input.kind === "admin" ? "platform" : "funeral_home",
         name: input.orgName.trim(),
         email,
         phone: input.phone || null,
@@ -80,22 +113,24 @@ export async function registerAccount(
         // Vendors are vetted by the platform before directors can order from them.
         status: input.kind === "vendor" ? "pending" : "approved",
       })
-      .returning();
-    const [user] = await tx
-      .insert(users)
-      .values({ email, name: input.name.trim(), passwordHash, role: input.kind, orgId: org.id })
-      .returning();
-    return { user, org };
-  });
+      .returning(),
+    db.insert(users).values({ id: userId, email, name: input.name.trim(), passwordHash, role: input.kind, orgId }).returning(),
+  ]);
+  return { user, org };
 }
 
 export async function authenticate(db: DB, email: string, password: string) {
-  const [u] = await db
-    .select()
-    .from(users)
-    .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`);
-  if (!u) return null;
+  const u = await findUserByEmail(db, email);
+  if (!u) {
+    await hashPassword(password); // equalise timing so emails can't be enumerated
+    return null;
+  }
   return (await verifyPassword(password, u.passwordHash)) ? u : null;
+}
+
+export async function hasAdmin(db: DB): Promise<boolean> {
+  const [row] = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1);
+  return Boolean(row);
 }
 
 /* ---------------- cases ---------------- */
@@ -107,16 +142,13 @@ export async function createCase(
 ) {
   if (actor.role !== "director") throw new DomainError("Only funeral directors create cases");
   if (!input.deceasedName.trim()) throw new DomainError("Name of the deceased is required");
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(funeralCases)
-    .where(eq(funeralCases.directorOrgId, actor.orgId));
-  const reference = `C-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
+  const year = new Date().getFullYear();
+  const n = await nextNumber(db, `case:${actor.orgId}:${year}`);
   const [row] = await db
     .insert(funeralCases)
     .values({
       directorOrgId: actor.orgId,
-      reference,
+      reference: `C-${year}-${String(n).padStart(4, "0")}`,
       deceasedName: input.deceasedName.trim(),
       funeralDate: input.funeralDate ?? null,
       location: input.location || null,
@@ -144,6 +176,9 @@ export async function createOrder(
   if (actor.role !== "director") throw new DomainError("Only funeral directors place orders");
   const items = input.items.filter((i) => i.quantity > 0);
   if (!items.length) throw new DomainError("Add at least one service to the order");
+  for (const i of items) {
+    if (!Number.isInteger(i.quantity) || i.quantity < 1 || i.quantity > 999) throw new DomainError("Invalid quantity");
+  }
 
   const [vendor] = await db.select().from(organizations).where(eq(organizations.id, input.vendorOrgId));
   if (!vendor || vendor.type !== "vendor" || vendor.status !== "approved")
@@ -170,15 +205,16 @@ export async function createOrder(
       ),
     );
   const byId = new Map(svc.map((s) => [s.id, s]));
-  for (const i of items) {
-    if (!byId.has(i.serviceId)) throw new DomainError("A selected service is no longer available");
-    if (!Number.isInteger(i.quantity) || i.quantity < 1 || i.quantity > 999) throw new DomainError("Invalid quantity");
-  }
+  for (const i of items) if (!byId.has(i.serviceId)) throw new DomainError("A selected service is no longer available");
 
-  return db.transaction(async (tx) => {
-    const [order] = await tx
+  const orderId = crypto.randomUUID();
+  const number = await nextNumber(db, "order", 1001);
+  const [[order]] = await db.batch([
+    db
       .insert(orders)
       .values({
+        id: orderId,
+        number,
         caseId: fcase.id,
         directorOrgId: actor.orgId,
         vendorOrgId: vendor.id,
@@ -187,13 +223,13 @@ export async function createOrder(
         deliveryAddress: input.deliveryAddress || fcase.location || null,
         notes: input.notes || null,
       })
-      .returning();
-    await tx.insert(orderItems).values(
+      .returning(),
+    db.insert(orderItems).values(
       items.map((i) => {
         const s = byId.get(i.serviceId)!;
         // Snapshot price + VAT so later rate-card changes don't alter this order.
         return {
-          orderId: order.id,
+          orderId,
           serviceId: s.id,
           description: s.name,
           quantity: i.quantity,
@@ -201,15 +237,15 @@ export async function createOrder(
           vatRateBps: s.vatRateBps,
         };
       }),
-    );
-    await tx.insert(orderMessages).values({
-      orderId: order.id,
+    ),
+    db.insert(orderMessages).values({
+      orderId,
       authorUserId: actor.uid,
       kind: "system",
-      body: `Order #${order.number} placed by ${actor.name}`,
-    });
-    return order;
-  });
+      body: `Order #${number} placed by ${actor.name}`,
+    }),
+  ]);
+  return order;
 }
 
 function canAccessOrder(actor: Actor, o: { directorOrgId: string; vendorOrgId: string }) {
@@ -217,7 +253,7 @@ function canAccessOrder(actor: Actor, o: { directorOrgId: string; vendorOrgId: s
 }
 
 export async function loadOrder(db: DB, actor: Actor, orderId: string) {
-  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return null;
+  if (!UUID.test(orderId)) return null;
   const order = await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
@@ -226,7 +262,10 @@ export async function loadOrder(db: DB, actor: Actor, orderId: string) {
       vendor: true,
       items: true,
       invoice: true,
-      messages: { with: { author: { columns: { name: true, role: true } } }, orderBy: (m, { asc }) => [asc(m.createdAt)] },
+      messages: {
+        with: { author: { columns: { name: true, role: true } } },
+        orderBy: (m, { asc }) => [asc(m.createdAt)],
+      },
     },
   });
   if (!order || !canAccessOrder(actor, order)) return null;
@@ -234,29 +273,35 @@ export async function loadOrder(db: DB, actor: Actor, orderId: string) {
 }
 
 export async function transitionOrder(db: DB, actor: Actor, orderId: string, action: OrderAction, reason?: string) {
-  return db.transaction(async (tx) => {
-    const [o] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
-    if (!o || !canAccessOrder(actor, o)) throw new DomainError("Order not found");
-    if (actor.role === "vendor" && o.vendorOrgId !== actor.orgId) throw new DomainError("Not your order");
-    if (actor.role === "director" && o.directorOrgId !== actor.orgId) throw new DomainError("Not your order");
+  const [o] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!o || !canAccessOrder(actor, o)) throw new DomainError("Order not found");
+  if (actor.role === "vendor" && o.vendorOrgId !== actor.orgId) throw new DomainError("Not your order");
+  if (actor.role === "director" && o.directorOrgId !== actor.orgId) throw new DomainError("Not your order");
 
-    let to;
-    try {
-      to = nextStatus(o.status, action, actor.role);
-    } catch (e) {
-      throw new DomainError((e as Error).message);
-    }
-    await tx.update(orders).set({ status: to, updatedAt: new Date() }).where(eq(orders.id, o.id));
-    await tx.insert(orderMessages).values({
-      orderId: o.id,
-      authorUserId: actor.uid,
-      kind: "system",
-      body: `${actor.name} changed status to ${ORDER_STATUS_LABELS[to]}${reason ? ` — ${reason}` : ""}`,
-    });
-    let invoiceId: string | null = null;
-    if (to === "delivered") invoiceId = (await issueInvoice(tx as unknown as DB, o.id)).id;
-    return { status: to, invoiceId, label: ORDER_ACTIONS[action].label };
+  let to: OrderStatus;
+  try {
+    to = nextStatus(o.status, action, actor.role);
+  } catch (e) {
+    throw new DomainError((e as Error).message);
+  }
+
+  // Optimistic concurrency: only applies if nobody changed the status since we read it.
+  const [updated] = await db
+    .update(orders)
+    .set({ status: to, updatedAt: new Date() })
+    .where(and(eq(orders.id, o.id), eq(orders.status, o.status)))
+    .returning({ id: orders.id });
+  if (!updated) throw new DomainError("This order was just updated by someone else — refresh and try again");
+  await db.insert(orderMessages).values({
+    orderId: o.id,
+    authorUserId: actor.uid,
+    kind: "system",
+    body: `${actor.name} changed status to ${ORDER_STATUS_LABELS[to]}${reason ? ` — ${reason}` : ""}`,
   });
+
+  let invoiceId: string | null = null;
+  if (to === "delivered") invoiceId = (await issueInvoice(db, o.id)).id;
+  return { status: to, invoiceId, label: ORDER_ACTIONS[action].label };
 }
 
 export async function postMessage(db: DB, actor: Actor, orderId: string, body: string) {
@@ -277,32 +322,19 @@ export async function issueInvoice(db: DB, orderId: string) {
 
   const [o] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!o) throw new DomainError("Order not found");
+  if (o.status !== "delivered") throw new DomainError("Only delivered orders can be invoiced");
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   const cfg = await getSettings(db);
   const t = computeInvoiceTotals(items, Number(cfg.platform_fee_bps), Number(cfg.platform_fee_min_cents));
 
-  const [{ n }] = (await db.execute(sql`select nextval('invoice_number_seq')::int as n`)).rows as { n: number }[];
-  const number = `DIL-${new Date().getFullYear()}-${String(n).padStart(6, "0")}`;
+  const year = new Date().getFullYear();
+  const n = await nextNumber(db, `invoice:${year}`);
+  const number = `DIL-${year}-${String(n).padStart(6, "0")}`;
+  const invoiceId = crypto.randomUUID();
   const dueAt = new Date(Date.now() + Number(cfg.payment_terms_days) * 86400000);
 
-  const [inv] = await db
-    .insert(invoices)
-    .values({
-      number,
-      orderId,
-      directorOrgId: o.directorOrgId,
-      vendorOrgId: o.vendorOrgId,
-      subtotalCents: t.subtotalCents,
-      vatCents: t.vatCents,
-      platformFeeCents: t.platformFeeCents,
-      platformFeeVatCents: t.platformFeeVatCents,
-      totalCents: t.totalCents,
-      dueAt,
-    })
-    .returning();
-
   const lines: (typeof invoiceLines.$inferInsert)[] = items.map((i) => ({
-    invoiceId: inv.id,
+    invoiceId,
     kind: "item",
     description: i.description,
     quantity: i.quantity,
@@ -313,7 +345,7 @@ export async function issueInvoice(db: DB, orderId: string) {
   }));
   if (t.platformFeeCents > 0) {
     lines.push({
-      invoiceId: inv.id,
+      invoiceId,
       kind: "platform_fee",
       description: `Platform service charge (${Number(cfg.platform_fee_bps) / 100}%)`,
       quantity: 1,
@@ -323,17 +355,39 @@ export async function issueInvoice(db: DB, orderId: string) {
       vatCents: t.platformFeeVatCents,
     });
   }
-  await db.insert(invoiceLines).values(lines);
-  await db.insert(orderMessages).values({
-    orderId,
-    kind: "system",
-    body: `Invoice ${number} issued`,
-  });
-  return inv;
+
+  try {
+    const [[inv]] = await db.batch([
+      db
+        .insert(invoices)
+        .values({
+          id: invoiceId,
+          number,
+          orderId,
+          directorOrgId: o.directorOrgId,
+          vendorOrgId: o.vendorOrgId,
+          subtotalCents: t.subtotalCents,
+          vatCents: t.vatCents,
+          platformFeeCents: t.platformFeeCents,
+          platformFeeVatCents: t.platformFeeVatCents,
+          totalCents: t.totalCents,
+          dueAt,
+        })
+        .returning(),
+      db.insert(invoiceLines).values(lines),
+      db.insert(orderMessages).values({ orderId, kind: "system", body: `Invoice ${number} issued` }),
+    ]);
+    return inv;
+  } catch (e) {
+    // Lost a race with a concurrent issue for the same order (unique order_id): return the winner.
+    const [winner] = await db.select().from(invoices).where(eq(invoices.orderId, orderId));
+    if (winner) return winner;
+    throw e;
+  }
 }
 
 export async function loadInvoice(db: DB, actor: Actor, invoiceId: string) {
-  if (!/^[0-9a-f-]{36}$/i.test(invoiceId)) return null;
+  if (!UUID.test(invoiceId)) return null;
   const inv = await db.query.invoices.findFirst({
     where: eq(invoices.id, invoiceId),
     with: {
@@ -356,22 +410,24 @@ export async function markInvoicePaid(
   if (!inv) throw new DomainError("Invoice not found");
   if (inv.status === "paid") return inv; // idempotent (webhook + return URL can both fire)
   if (inv.status === "void") throw new DomainError("Invoice is void");
-  const [updated] = await db
-    .update(invoices)
-    .set({
-      status: "paid",
-      paidAt: new Date(),
-      paymentMethod: info.method,
-      stripePaymentIntentId: info.paymentIntentId ?? inv.stripePaymentIntentId,
-      stripeCheckoutSessionId: info.checkoutSessionId ?? inv.stripeCheckoutSessionId,
-    })
-    .where(eq(invoices.id, invoiceId))
-    .returning();
-  await db.insert(orderMessages).values({
-    orderId: inv.orderId,
-    kind: "system",
-    body: `Invoice ${inv.number} paid (${info.method})`,
-  });
+  const [[updated]] = await db.batch([
+    db
+      .update(invoices)
+      .set({
+        status: "paid",
+        paidAt: new Date(),
+        paymentMethod: info.method,
+        stripePaymentIntentId: info.paymentIntentId ?? inv.stripePaymentIntentId,
+        stripeCheckoutSessionId: info.checkoutSessionId ?? inv.stripeCheckoutSessionId,
+      })
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.status, "issued")))
+      .returning(),
+    db.insert(orderMessages).values({ orderId: inv.orderId, kind: "system", body: `Invoice ${inv.number} paid (${info.method})` }),
+  ]);
+  if (!updated) {
+    const [now] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
+    return now;
+  }
   return updated;
 }
 
@@ -380,20 +436,22 @@ export async function voidInvoice(db: DB, actor: Actor, invoiceId: string) {
   const [inv] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
   if (!inv) throw new DomainError("Invoice not found");
   if (inv.status === "paid") throw new DomainError("Paid invoices must be refunded in Stripe, not voided");
-  await db.update(invoices).set({ status: "void" }).where(eq(invoices.id, invoiceId));
-  await db.insert(orderMessages).values({ orderId: inv.orderId, kind: "system", body: `Invoice ${inv.number} voided by admin` });
+  await db.batch([
+    db.update(invoices).set({ status: "void" }).where(eq(invoices.id, invoiceId)),
+    db.insert(orderMessages).values({ orderId: inv.orderId, kind: "system", body: `Invoice ${inv.number} voided by admin` }),
+  ] as Batch);
 }
 
 /* ---------------- listings ---------------- */
 
-export async function listOrders(db: DB, actor: Actor, opts: { status?: string[]; limit?: number } = {}) {
+export async function listOrders(db: DB, actor: Actor, opts: { status?: OrderStatus[]; limit?: number } = {}) {
   const scope =
     actor.role === "admin"
       ? undefined
       : actor.role === "vendor"
         ? eq(orders.vendorOrgId, actor.orgId)
         : eq(orders.directorOrgId, actor.orgId);
-  const statusFilter = opts.status?.length ? inArray(orders.status, opts.status as never[]) : undefined;
+  const statusFilter = opts.status?.length ? inArray(orders.status, opts.status) : undefined;
   return db.query.orders.findMany({
     where: and(scope, statusFilter),
     with: { case: true, vendor: true, director: true, items: true },

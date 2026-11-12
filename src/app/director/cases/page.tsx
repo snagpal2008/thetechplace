@@ -11,7 +11,7 @@ export default async function Cases() {
   const rows = await db
     .select({
       c: funeralCases,
-      orderCount: sql<number>`(select count(*)::int from ${orders} where ${orders.caseId} = ${funeralCases.id})`,
+      orderCount: sql<number>`(select count(*) from ${orders} where ${orders.caseId} = ${funeralCases.id})`,
     })
     .from(funeralCases)
     .where(eq(funeralCases.directorOrgId, session.orgId))

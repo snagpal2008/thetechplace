@@ -7,17 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: dilis
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/dilis
       AUTH_SECRET: ci-secret-0123456789abcdef
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
@@ -28,6 +18,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run db:migrate
-      - run: npm test
-      - run: npm run cf:build
+      - run: npm test            # unit + full lifecycle on in-memory SQLite (same engine as D1)
+      - run: npm run cf:build    # Cloudflare Worker bundle

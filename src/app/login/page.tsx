@@ -1,12 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getDb } from "@/db";
+import { hasAdmin } from "@/lib/domain";
 import { loginAction } from "@/app/actions";
 import { AuthCard } from "@/components/AuthCard";
 import { ActionForm, Submit } from "@/components/forms";
 
 export const metadata = { title: "Sign in" };
+export const dynamic = "force-dynamic";
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const sp = await searchParams;
+  if (!(await hasAdmin(await getDb()))) redirect("/setup");
   return (
     <AuthCard title="Sign in" subtitle={<>New here? <Link href="/register" className="link">Create an account</Link></>}>
       {sp.error === "forbidden" && <p className="mb-4 text-sm text-alert">You don't have access to that page.</p>}

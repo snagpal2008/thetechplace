@@ -1,45 +1,34 @@
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle as drizzleD1, type DrizzleD1Database } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
-export type DB = NodePgDatabase<typeof schema>;
+/**
+ * One DB type across runtimes. On Cloudflare it's D1; in Node (tests, seed,
+ * `next dev` without bindings) it's libsql against a local SQLite file.
+ * Both drivers expose the same async API (select/insert/update/batch/run/all/query).
+ */
+export type DB = DrizzleD1Database<typeof schema>;
 
-const isWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+const globalForDb = globalThis as unknown as { __dilisDb?: DB };
 
-/** Connection string: DATABASE_URL locally / in scripts, Hyperdrive binding on Cloudflare. */
-async function connectionString(): Promise<string> {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const { env } = await getCloudflareContext({ async: true });
-  return (env as unknown as CloudflareEnv).HYPERDRIVE.connectionString;
-}
-
-// Node (local dev, scripts): one shared pool for the process.
-const globalForDb = globalThis as unknown as { __dilisPool?: Pool };
-
-function nodeDb(url: string): DB {
-  globalForDb.__dilisPool ??= new Pool({ connectionString: url, max: 10 });
-  return drizzle(globalForDb.__dilisPool, { schema });
-}
-
-// Workers: sockets can't be shared across requests, so build one client per request,
-// keyed on that request's ExecutionContext. Hyperdrive does the real pooling at the edge.
-const perRequest = new WeakMap<object, DB>();
-
-async function workersDb(): Promise<DB> {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-  const { env, ctx } = await getCloudflareContext({ async: true });
-  const hit = perRequest.get(ctx);
-  if (hit) return hit;
-  const pool = new Pool({ connectionString: (env as unknown as CloudflareEnv).HYPERDRIVE.connectionString, max: 5 });
-  const db = drizzle(pool, { schema });
-  perRequest.set(ctx, db);
-  return db;
+async function nodeDb(url: string): Promise<DB> {
+  if (!globalForDb.__dilisDb) {
+    const { createClient } = await import("@libsql/client");
+    const { drizzle } = await import("drizzle-orm/libsql");
+    const client = createClient({ url });
+    await client.execute("PRAGMA foreign_keys = ON");
+    globalForDb.__dilisDb = drizzle(client, { schema }) as unknown as DB;
+  }
+  return globalForDb.__dilisDb;
 }
 
 export async function getDb(): Promise<DB> {
-  if (isWorkers && !process.env.DATABASE_URL) return workersDb();
-  return nodeDb(await connectionString());
+  // Local scripts/tests/dev: SQLITE_URL=file:./local.db
+  const local = process.env.SQLITE_URL;
+  if (local) return nodeDb(local);
+
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const { env } = await getCloudflareContext({ async: true });
+  return drizzleD1((env as unknown as CloudflareEnv).DB, { schema });
 }
 
 export { schema };

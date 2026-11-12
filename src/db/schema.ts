@@ -1,21 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import {
-  boolean,
-  index,
-  integer,
-  pgEnum,
-  pgSequence,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-export const roleEnum = pgEnum("role", ["director", "vendor", "admin"]);
-export const orgTypeEnum = pgEnum("org_type", ["funeral_home", "vendor", "platform"]);
-export const orgStatusEnum = pgEnum("org_status", ["pending", "approved", "suspended"]);
-export const vendorCategoryEnum = pgEnum("vendor_category", [
+/* Enum value lists (SQLite has no enum type; drizzle enforces these in TypeScript). */
+export const ROLES = ["director", "vendor", "admin"] as const;
+export const ORG_TYPES = ["funeral_home", "vendor", "platform"] as const;
+export const ORG_STATUSES = ["pending", "approved", "suspended"] as const;
+export const VENDOR_CATEGORIES = [
   "florist",
   "coffins_caskets",
   "transport_limousine",
@@ -27,28 +17,29 @@ export const vendorCategoryEnum = pgEnum("vendor_category", [
   "crematorium",
   "cemetery_monuments",
   "other",
-]);
-export const caseStatusEnum = pgEnum("case_status", ["open", "closed"]);
-export const orderStatusEnum = pgEnum("order_status", [
-  "requested",
-  "accepted",
-  "declined",
-  "in_progress",
-  "delivered",
-  "cancelled",
-]);
-export const invoiceStatusEnum = pgEnum("invoice_status", ["issued", "paid", "void"]);
-export const lineKindEnum = pgEnum("line_kind", ["item", "platform_fee"]);
-export const messageKindEnum = pgEnum("message_kind", ["user", "system"]);
+] as const;
+export const CASE_STATUSES = ["open", "closed"] as const;
+export const ORDER_STATUSES = ["requested", "accepted", "declined", "in_progress", "delivered", "cancelled"] as const;
+export const INVOICE_STATUSES = ["issued", "paid", "void"] as const;
+export const LINE_KINDS = ["item", "platform_fee"] as const;
+export const MESSAGE_KINDS = ["user", "system"] as const;
 
-const id = () => uuid("id").primaryKey().defaultRandom();
-const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+const id = () =>
+  text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
+const ts = (name: string) => integer(name, { mode: "timestamp_ms" });
+const createdAt = () =>
+  ts("created_at")
+    .notNull()
+    .$defaultFn(() => new Date());
+const bool = (name: string) => integer(name, { mode: "boolean" });
 
-export const organizations = pgTable(
+export const organizations = sqliteTable(
   "organizations",
   {
     id: id(),
-    type: orgTypeEnum("type").notNull(),
+    type: text("type", { enum: ORG_TYPES }).notNull(),
     name: text("name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
@@ -56,36 +47,37 @@ export const organizations = pgTable(
     county: text("county"),
     vatNumber: text("vat_number"),
     description: text("description"),
-    category: vendorCategoryEnum("category"),
-    status: orgStatusEnum("status").notNull().default("pending"),
+    category: text("category", { enum: VENDOR_CATEGORIES }),
+    status: text("status", { enum: ORG_STATUSES }).notNull().default("pending"),
     stripeAccountId: text("stripe_account_id"),
-    stripeChargesEnabled: boolean("stripe_charges_enabled").notNull().default(false),
+    stripeChargesEnabled: bool("stripe_charges_enabled").notNull().default(false),
     createdAt: createdAt(),
   },
-  (t) => [index("org_type_status_idx").on(t.type, t.status)],
+  (t) => [index("org_type_status_idx").on(t.type, t.status), index("org_stripe_idx").on(t.stripeAccountId)],
 );
 
-export const users = pgTable(
+export const users = sqliteTable(
   "users",
   {
     id: id(),
+    /** Always stored lower-cased */
     email: text("email").notNull(),
     name: text("name").notNull(),
     passwordHash: text("password_hash").notNull(),
-    role: roleEnum("role").notNull(),
-    orgId: uuid("org_id")
+    role: text("role", { enum: ROLES }).notNull(),
+    orgId: text("org_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("users_email_uq").on(sql`lower(${t.email})`)],
+  (t) => [uniqueIndex("users_email_uq").on(t.email)],
 );
 
-export const services = pgTable(
+export const services = sqliteTable(
   "services",
   {
     id: id(),
-    vendorOrgId: uuid("vendor_org_id")
+    vendorOrgId: text("vendor_org_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
@@ -95,105 +87,110 @@ export const services = pgTable(
     /** VAT rate in basis points: 2300 = 23%, 1350 = 13.5%, 0 = exempt */
     vatRateBps: integer("vat_rate_bps").notNull().default(2300),
     imageUrl: text("image_url"),
-    active: boolean("active").notNull().default(true),
+    active: bool("active").notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [index("services_vendor_idx").on(t.vendorOrgId)],
 );
 
-export const funeralCases = pgTable(
+export const funeralCases = sqliteTable(
   "funeral_cases",
   {
     id: id(),
-    directorOrgId: uuid("director_org_id")
+    directorOrgId: text("director_org_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     reference: text("reference").notNull(),
     deceasedName: text("deceased_name").notNull(),
-    funeralDate: timestamp("funeral_date", { withTimezone: true }),
+    funeralDate: ts("funeral_date"),
     location: text("location"),
     familyContact: text("family_contact"),
     notes: text("notes"),
-    status: caseStatusEnum("status").notNull().default("open"),
+    status: text("status", { enum: CASE_STATUSES }).notNull().default("open"),
     createdAt: createdAt(),
   },
   (t) => [index("cases_director_idx").on(t.directorOrgId)],
 );
 
-export const orders = pgTable(
+export const orders = sqliteTable(
   "orders",
   {
     id: id(),
-    number: integer("number").generatedAlwaysAsIdentity({ startWith: 1001 }).notNull(),
-    caseId: uuid("case_id")
+    /** Human-friendly number, allocated from the counters table */
+    number: integer("number").notNull(),
+    caseId: text("case_id")
       .notNull()
       .references(() => funeralCases.id, { onDelete: "restrict" }),
-    directorOrgId: uuid("director_org_id")
+    directorOrgId: text("director_org_id")
       .notNull()
       .references(() => organizations.id),
-    vendorOrgId: uuid("vendor_org_id")
+    vendorOrgId: text("vendor_org_id")
       .notNull()
       .references(() => organizations.id),
-    createdByUserId: uuid("created_by_user_id").references(() => users.id),
-    status: orderStatusEnum("status").notNull().default("requested"),
-    requiredBy: timestamp("required_by", { withTimezone: true }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    status: text("status", { enum: ORDER_STATUSES }).notNull().default("requested"),
+    requiredBy: ts("required_by"),
     deliveryAddress: text("delivery_address"),
     notes: text("notes"),
     createdAt: createdAt(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: ts("updated_at")
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (t) => [
+    uniqueIndex("orders_number_uq").on(t.number),
     index("orders_director_idx").on(t.directorOrgId, t.status),
     index("orders_vendor_idx").on(t.vendorOrgId, t.status),
     index("orders_case_idx").on(t.caseId),
   ],
 );
 
-export const orderItems = pgTable("order_items", {
-  id: id(),
-  orderId: uuid("order_id")
-    .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  serviceId: uuid("service_id").references(() => services.id, { onDelete: "set null" }),
-  description: text("description").notNull(),
-  quantity: integer("quantity").notNull(),
-  unitPriceCents: integer("unit_price_cents").notNull(),
-  vatRateBps: integer("vat_rate_bps").notNull(),
-});
+export const orderItems = sqliteTable(
+  "order_items",
+  {
+    id: id(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    serviceId: text("service_id").references(() => services.id, { onDelete: "set null" }),
+    description: text("description").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    vatRateBps: integer("vat_rate_bps").notNull(),
+  },
+  (t) => [index("order_items_order_idx").on(t.orderId)],
+);
 
-export const orderMessages = pgTable(
+export const orderMessages = sqliteTable(
   "order_messages",
   {
     id: id(),
-    orderId: uuid("order_id")
+    orderId: text("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "set null" }),
-    kind: messageKindEnum("kind").notNull().default("user"),
+    authorUserId: text("author_user_id").references(() => users.id, { onDelete: "set null" }),
+    kind: text("kind", { enum: MESSAGE_KINDS }).notNull().default("user"),
     body: text("body").notNull(),
     createdAt: createdAt(),
   },
   (t) => [index("messages_order_idx").on(t.orderId, t.createdAt)],
 );
 
-/** Gap-tolerant counter used to build invoice numbers like DIL-2026-000042 */
-export const invoiceNumberSeq = pgSequence("invoice_number_seq", { startWith: 1 });
-
-export const invoices = pgTable(
+export const invoices = sqliteTable(
   "invoices",
   {
     id: id(),
     number: text("number").notNull(),
-    orderId: uuid("order_id")
+    orderId: text("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "restrict" }),
-    directorOrgId: uuid("director_org_id")
+    directorOrgId: text("director_org_id")
       .notNull()
       .references(() => organizations.id),
-    vendorOrgId: uuid("vendor_org_id")
+    vendorOrgId: text("vendor_org_id")
       .notNull()
       .references(() => organizations.id),
-    status: invoiceStatusEnum("status").notNull().default("issued"),
+    status: text("status", { enum: INVOICE_STATUSES }).notNull().default("issued"),
     currency: text("currency").notNull().default("eur"),
     /** Vendor goods/services, ex VAT */
     subtotalCents: integer("subtotal_cents").notNull(),
@@ -204,9 +201,11 @@ export const invoices = pgTable(
     /** VAT on the platform service charge */
     platformFeeVatCents: integer("platform_fee_vat_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
-    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
-    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
-    paidAt: timestamp("paid_at", { withTimezone: true }),
+    issuedAt: ts("issued_at")
+      .notNull()
+      .$defaultFn(() => new Date()),
+    dueAt: ts("due_at").notNull(),
+    paidAt: ts("paid_at"),
     paymentMethod: text("payment_method"),
     stripeCheckoutSessionId: text("stripe_checkout_session_id"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),
@@ -219,23 +218,33 @@ export const invoices = pgTable(
   ],
 );
 
-export const invoiceLines = pgTable("invoice_lines", {
-  id: id(),
-  invoiceId: uuid("invoice_id")
-    .notNull()
-    .references(() => invoices.id, { onDelete: "cascade" }),
-  kind: lineKindEnum("kind").notNull().default("item"),
-  description: text("description").notNull(),
-  quantity: integer("quantity").notNull(),
-  unitPriceCents: integer("unit_price_cents").notNull(),
-  vatRateBps: integer("vat_rate_bps").notNull(),
-  netCents: integer("net_cents").notNull(),
-  vatCents: integer("vat_cents").notNull(),
-});
+export const invoiceLines = sqliteTable(
+  "invoice_lines",
+  {
+    id: id(),
+    invoiceId: text("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: LINE_KINDS }).notNull().default("item"),
+    description: text("description").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPriceCents: integer("unit_price_cents").notNull(),
+    vatRateBps: integer("vat_rate_bps").notNull(),
+    netCents: integer("net_cents").notNull(),
+    vatCents: integer("vat_cents").notNull(),
+  },
+  (t) => [index("invoice_lines_invoice_idx").on(t.invoiceId)],
+);
 
-export const settings = pgTable("settings", {
+export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
+});
+
+/** Atomic counters for human-readable numbers (orders, invoices, case refs). */
+export const counters = sqliteTable("counters", {
+  key: text("key").primaryKey(),
+  value: integer("value").notNull().default(0),
 });
 
 /* ---------- relations (for db.query.*) ---------- */
@@ -300,7 +309,9 @@ export type User = typeof users.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type FuneralCase = typeof funeralCases.$inferSelect;
 export type Order = typeof orders.$inferSelect;
-export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type Invoice = typeof invoices.$inferSelect;
-export type VendorCategory = (typeof vendorCategoryEnum.enumValues)[number];
-export type Role = (typeof roleEnum.enumValues)[number];
+export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
+export type Role = (typeof ROLES)[number];
+
+export { sql };

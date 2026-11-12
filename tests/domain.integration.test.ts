@@ -1,19 +1,20 @@
 /**
- * Runs the full order → invoice → payment flow against a real Postgres.
- * Skipped unless DATABASE_URL is set. Uses a throwaway schema-less approach:
- * creates uniquely-named accounts so it can run against a dev DB.
+ * Full order → invoice → payment flow against real SQLite (same engine as D1),
+ * with the real migrations applied. `npm test` uses an in-memory database.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { eq } from "drizzle-orm";
 
-const enabled = Boolean(process.env.DATABASE_URL);
+const enabled = Boolean(process.env.SQLITE_URL);
 
 test("order lifecycle issues a correct invoice and records payment", { skip: !enabled }, async () => {
   const { getDb } = await import("../src/db");
   const { organizations, services, invoices, invoiceLines } = await import("../src/db/schema");
   const d = await import("../src/lib/domain");
   const db = await getDb();
+  const { migrate } = await import("drizzle-orm/libsql/migrator");
+  await migrate(db as never, { migrationsFolder: "drizzle" });
   const tag = Date.now().toString(36);
 
   const fh = await d.registerAccount(db, { kind: "director", orgName: `FH ${tag}`, name: "Dir", email: `d-${tag}@t.ie`, password: "password123" });
@@ -55,6 +56,13 @@ test("order lifecycle issues a correct invoice and records payment", { skip: !en
   assert.match(inv.number, /^DIL-\d{4}-\d{6}$/);
   const lines = await db.select().from(invoiceLines).where(eq(invoiceLines.invoiceId, inv.id));
   assert.equal(lines.reduce((s, l) => s + l.netCents + l.vatCents, 0), inv.totalCents);
+
+  // Stale/concurrent transitions are rejected (optimistic concurrency)
+  await assert.rejects(d.transitionOrder(db, vendor, o.id, "deliver"), /Cannot deliver/);
+
+  // Sequential order numbers
+  const o2 = await d.createOrder(db, director, { vendorOrgId: vn.org.id, caseId: c.id, items: [{ serviceId: svc.id, quantity: 1 }] });
+  assert.equal(o2.number, o.number + 1);
 
   // Idempotent issue
   assert.equal((await d.issueInvoice(db, o.id)).id, inv.id);

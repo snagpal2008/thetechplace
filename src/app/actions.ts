@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { funeralCases, organizations, services, users, vendorCategoryEnum } from "@/db/schema";
+import { funeralCases, organizations, services, users, VENDOR_CATEGORIES } from "@/db/schema";
 import { homeFor } from "@/lib/auth-token";
 import { current } from "@/lib/current";
 import {
@@ -20,7 +20,9 @@ import {
   transitionOrder,
   voidInvoice,
   loadInvoice,
+  hasAdmin,
 } from "@/lib/domain";
+import { loadDemoData } from "@/lib/demo";
 import { parseEurosToCents } from "@/lib/money";
 import type { OrderAction } from "@/lib/order-flow";
 import { clearSession, setSessionCookie } from "@/lib/session";
@@ -69,7 +71,7 @@ const RegisterSchema = z.object({
   phone: z.string().optional(),
   county: z.string().optional(),
   vatNumber: z.string().optional(),
-  category: z.enum(vendorCategoryEnum.enumValues).optional(),
+  category: z.enum(VENDOR_CATEGORIES).optional(),
 });
 
 export async function registerAction(_: Result, fd: FormData): Promise<Result> {
@@ -91,6 +93,26 @@ export async function registerAction(_: Result, fd: FormData): Promise<Result> {
   });
   if (res?.error) return res;
   redirect(str(fd, "kind") === "vendor" ? "/vendor?welcome=1" : "/director?welcome=1");
+}
+
+export async function setupAction(_: Result, fd: FormData): Promise<Result> {
+  const res = await guard(async () => {
+    const db = await getDb();
+    if (await hasAdmin(db)) throw new DomainError("Setup is already complete — sign in instead.");
+    const password = String(fd.get("password") ?? "");
+    if (password.length < 10) throw new DomainError("Admin password must be at least 10 characters");
+    const { user } = await registerAccount(db, {
+      kind: "admin",
+      orgName: "Dílis (FuneralDirector.ie)",
+      name: str(fd, "name") || "Platform Admin",
+      email: z.string().email("Enter a valid email").parse(str(fd, "email")),
+      password,
+    });
+    if (fd.get("demo")) await loadDemoData(db);
+    await setSessionCookie({ uid: user.id, role: user.role, orgId: user.orgId, name: user.name });
+  });
+  if (res?.error) return res;
+  redirect("/admin?setup=1");
 }
 
 export async function logoutAction() {
