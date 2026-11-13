@@ -1,8 +1,6 @@
 {
   "_comment": "Every {{token}} in src/ is filled from this file at build time. Replace the SAMPLE values with the funeral home's real details, then set preview to \"false\" to let search engines list the site.",
   "preview": "true",
-  "formsEndpoint": "",
-  "alertEmail": "snagpal2008@gmail.com",
   "name": "Hawthorn Family Funeral Directors",
   "shortName": "Hawthorn Funerals",
   "town": "Naas",
@@ -16,7 +14,7 @@
   "phone247": "087 000 0000",
   "phone247Intl": "+353870000000",
   "email": "care@example-funeralhome.ie",
-  "domain": "https://snagpal2008.github.io/thetechplace",
+  "domain": "https://www.example-funeralhome.ie",
   "founded": "1952",
   "generations": "three",
   "lat": "53.2159",

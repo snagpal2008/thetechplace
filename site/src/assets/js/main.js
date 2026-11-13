@@ -4,8 +4,6 @@
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  // Forms backend: the Google Apps Script URL from config.json (formsEndpoint), or empty for our own /api.
-  const API = (document.body.dataset.api || "").trim();
 
   /* ---------- navigation ---------- */
   const toggle = $(".nav-toggle");
@@ -130,7 +128,7 @@
         status.className = "form-status err"; status.textContent = "Please check the highlighted fields.";
         first.focus(); return;
       }
-      if (location.protocol === "file:" && !API) {
+      if (location.protocol === "file:") {
         status.className = "form-status err";
         status.textContent = "This is an offline preview, so forms can't be sent. Run the site with “npm start” to test forms. On the live website they go straight to the funeral home.";
         status.focus(); return;
@@ -140,13 +138,9 @@
       const data = {};
       new FormData(form).forEach((v, k) => { if (k in data) data[k] = [].concat(data[k], v); else data[k] = v; });
       try {
-        // With formsEndpoint set (Google Sheets backend) post there as text/plain: a "simple" request,
-        // so the browser needs no CORS preflight, which Apps Script cannot answer. Otherwise use our own /api.
-        const r = API
-          ? await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ form: form.dataset.form, ...data }) })
-          : await fetch(`/api/forms/${form.dataset.form}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        const r = await fetch(`/api/forms/${form.dataset.form}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok || j.error) throw Object.assign(new Error(j.error || "Something went wrong."), { fields: j.fields });
+        if (!r.ok) throw Object.assign(new Error(j.error || "Something went wrong."), { fields: j.fields });
         status.className = "form-status ok";
         status.textContent = form.dataset.success || j.message || "Thank you. We have received your message.";
         form.reset(); if (ts) ts.value = String(Date.now());
@@ -166,9 +160,8 @@
   /* ---------- notices: approved condolences + quick filter ---------- */
   const box = $("#condolences");
   if (box) {
-    const n = encodeURIComponent(box.dataset.notice);
-    fetch(API ? `${API}?action=condolences&notice=${n}` : `/api/condolences?notice=${n}`).then((r) => (r.ok ? r.json() : [])).then((items) => {
-      if (!Array.isArray(items) || !items.length) return;
+    fetch(`/api/condolences?notice=${encodeURIComponent(box.dataset.notice)}`).then((r) => (r.ok ? r.json() : [])).then((items) => {
+      if (!items.length) return;
       box.replaceChildren(...items.map((c) => {
         const d = document.createElement("div"); d.className = "condolence";
         const p = document.createElement("p"); p.textContent = c.message; // textContent: never inject HTML

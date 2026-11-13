@@ -3,8 +3,6 @@
 <head>
 <title>%TITLE%</title>
 {{robotsMeta}}
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://*.openstreetmap.org; frame-src https://www.openstreetmap.org; script-src 'self' https://www.googletagmanager.com; connect-src 'self' https://*.google-analytics.com https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
-<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="%DESCRIPTION%">
 <link rel="canonical" href="{{domain}}%PATH%">
 <meta property="og:title" content="%TITLE%">
@@ -13,7 +11,7 @@
 <!--#include head-->
 %HEAD%
 </head>
-<body data-phone="{{phone247}}" data-api="{{formsEndpoint}}">
+<body data-phone="{{phone247}}">
 <!--#include header-->
 <main id="main" tabindex="-1">
 %BODY%
