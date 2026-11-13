@@ -12,25 +12,27 @@ You are a senior web designer and front-end engineer who specialises in Canadian
 
 | Item | Value |
 |---|---|
-| Name exactly as registered with RECO | [[Harpreet Singh — check spelling against the RECO public register]] |
-| Title | Salesperson (use "Salesperson" or "Sales Representative" exactly as RECO allows) |
-| Brokerage name exactly as registered | [[Royal LePage ________, Brokerage — copy from the RECO register or realtor.ca]] |
-| Brokerage address | 484 Hazeldean Road, Unit 1, Ottawa (Kanata), ON K2L 1V4 |
+| Name exactly as registered with RECO | Harpreet Singh Chhabra |
+| Title | Salesperson, REALTOR® |
+| Brokerage name exactly as registered | Royal LePage Team Realty |
+| Brokerage address | 2-1439 Woodroffe Avenue, Ottawa, ON K2G 1W1 |
 | Brokerage phone | [[office phone]] |
 | Harpreet's direct phone / WhatsApp | [[phone]] |
-| Email | [[email]] |
+| Email | hchhabra@royallepage.ca |
 | realtor.ca profile URL | [[https://www.realtor.ca/agent/…]] |
-| Royal LePage profile URL | [[https://www.royallepage.ca/…]] |
-| Mortgage licence (only if Harpreet also holds one) | [[FSRA licence # and mortgage brokerage, or "none"]] |
+| Royal LePage profile URL | https://www.royallepage.ca/en/investorsedge/agent/ontario/ottawa/harpreet-singh-chhabra/98592/ |
+| Mortgage brokerage | Mortgage Intelligence, FSRA Brokerage #10428 (his own agent licence #: [[FSRA agent licence #]]) |
+| Mortgage website | https://theottawamortgages.com |
 | Preferred mortgage partner to refer to (optional) | [[name, FSRA licence #, link]] |
 | Service areas | [[e.g. Kanata, Stittsville, Barrhaven, Nepean, Orléans, Ottawa]] |
 | Languages spoken | [[e.g. English, Punjabi, Hindi]] |
 | Booking link | [[Calendly link or "use built-in form"]] |
-| YouTube channel URL | [[https://www.youtube.com/@…]] |
+| YouTube channel URL | https://www.youtube.com/channel/UCETjQnsJyxsOwk2-hemvAdg |
 | YouTube videos to feature (3–6) | [[video URLs]] |
-| Facebook page/profile URL | [[https://www.facebook.com/…]] |
+| Facebook page URL | https://www.facebook.com/theottawamortgages/ |
 | Facebook posts/videos to feature | [[post URLs]] |
-| Instagram / LinkedIn / TikTok / Google Business Profile | [[optional]] |
+| Instagram | https://www.instagram.com/theottawamortgages.comm (as published on his site; check the handle) |
+| LinkedIn (company) | https://ca.linkedin.com/company/the-ottawa-mortgages-com |
 | Accolades and awards (name, year, issuer) | [[e.g. Royal LePage award name + year]] |
 | Stats Harpreet can verify | [[e.g. years licensed, homes sold, neighbourhoods served]] |
 | Client reviews (verbatim, first name + last initial, date, source) | [[paste from Facebook / Google, with permission to republish]] |
