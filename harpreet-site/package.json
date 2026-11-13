@@ -1,9 +1,0 @@
-{
-  "name": "harpreet-singh-chhabra-site",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "node build.mjs",
-    "deploy": "node build.mjs && npx wrangler deploy"
-  }
-}
