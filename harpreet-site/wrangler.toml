@@ -1,0 +1,15 @@
+# Cloudflare Workers + static assets for Harpreet Singh Chhabra's site.
+# Dashboard (Workers & Pages → Create → Import a repository):
+#   Root directory: harpreet-site · Build command: node build.mjs
+#   Deploy command: npx wrangler deploy · Non-production branch deploy command: npx wrangler preview
+#   Optional build variable SITE_URL = your final domain (used for canonical links and sitemap).
+name = "harpreet-singh-chhabra"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./dist"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+# Required by `wrangler preview` (used for non-production branch builds).
+[previews]
