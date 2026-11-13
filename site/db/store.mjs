@@ -61,6 +61,21 @@ export function makeStore(db) {
       );
     },
 
+    /** Everything the daily report needs, read in four small queries. */
+    async dailyReport(now = new Date(), hours = 24) {
+      const since = new Date(now.getTime() - hours * 3_600_000).toISOString();
+      const [byForm, open, condolences, totals] = await Promise.all([
+        db.all(`SELECT form, COUNT(*) AS n FROM submissions WHERE received_at >= ? GROUP BY form ORDER BY n DESC`, [since]),
+        db.all(`SELECT id, form, owner, received_at, respond_by, data FROM submissions WHERE status = 'new' ORDER BY respond_by LIMIT 200`, []),
+        db.all(`SELECT
+                  SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+                  SUM(CASE WHEN received_at >= ? THEN 1 ELSE 0 END) AS new_today
+                FROM condolences`, [since]),
+        db.all(`SELECT status, COUNT(*) AS n FROM submissions GROUP BY status`, [])
+      ]);
+      return { since, byForm, open, condolences: condolences[0] || {}, totals };
+    },
+
     /**
      * Record one request for `key` (a hashed IP) and report whether it is over the limit:
      * more than `max` requests in the last `windowMs`. Old rows are cleaned up as we go.

@@ -16,5 +16,9 @@ database_name = "funeral-db"
 # Paste the "Database ID" shown on your D1 database's page in the Cloudflare dashboard:
 database_id = "8e818faa-e70e-4ba7-aded-e1bcf882dabb"
 
+# Daily report email + data clean-up. Times are UTC: 07:05 UTC = 7:05 am Irish winter time, 8:05 am summer time.
+[triggers]
+crons = ["5 7 * * *"]
+
 [observability]
 enabled = true
