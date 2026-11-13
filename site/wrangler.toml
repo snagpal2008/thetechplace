@@ -18,3 +18,6 @@ database_id = "8e818faa-e70e-4ba7-aded-e1bcf882dabb"
 
 [observability]
 enabled = true
+
+# Required by `wrangler preview` (used for non-production branch builds).
+[previews]
