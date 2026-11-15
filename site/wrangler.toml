@@ -22,3 +22,6 @@ crons = ["5 7 * * *"]
 
 [observability]
 enabled = true
+
+# Required by `wrangler preview` (used for non-production branch builds).
+[previews]
