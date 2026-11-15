@@ -38,6 +38,22 @@ Every form except condolences sends an email to **snagpal2008@gmail.com** throug
 - Set the script's URL (including `?key=…`) as the Pages secret `ALERT_WEBHOOK_URL`.
 - Tip: in the Gmail app, give the "Website alerts" sender its own notification sound, so urgent forms are heard at night.
 
+## Daily report by email
+
+Every morning at **07:05 UTC** (7:05 am Irish winter time, 8:05 am summer time) the Worker emails a report to the same Gmail address as the alerts:
+
+- new forms in the last 24 hours, by type
+- every request **still waiting for a reply**, with reference, name, phone and reply-by time. Late ones are marked **⚠ OVERDUE**, and the subject line says so.
+- condolence messages waiting for approval
+- totals of new / contacted / closed
+
+It never includes free-text messages. The same job also **deletes data past its retention date** (GDPR), so you don't need to run `db/purge.sql` by hand.
+
+- It uses `ALERT_WEBHOOK_URL`, so it starts working as soon as alerts are set up. The Gmail script must be the version that handles reports (`tools/gmail-alert.gs`, with the `p.type === 'report'` block).
+- Change the time in `site/wrangler.toml` → `[triggers] crons` (UTC, standard cron format).
+- **Check it ran:** Cloudflare → Workers & Pages → thetechplace → *Logs*, which shows a `{"job":"daily", "reportSent": true, …}` line each morning.
+- **Preview locally:** `npm run admin -- report` prints the same report from the local database.
+
 ## Day-to-day admin
 
 | Task | Command (run from `site/`, after `npx wrangler login`) |

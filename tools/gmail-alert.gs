@@ -26,6 +26,11 @@ function doPost(e) {
   }
   let p;
   try { p = JSON.parse(e.postData.contents); } catch (err) { return ContentService.createTextOutput('bad request'); }
+  if (p.type === 'report') {   // the daily report from the website's scheduled job
+    MailApp.sendEmail({ to: TO, subject: String(p.subject || 'Daily report').replace(/[\r\n]+/g, ' ').slice(0, 200),
+                        body: String(p.body || '').slice(0, 20000), name: 'Website reports' });
+    return ContentService.createTextOutput('ok');
+  }
   sendAlertEmail_(p);
   return ContentService.createTextOutput('ok');
 }

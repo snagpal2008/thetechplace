@@ -4,11 +4,14 @@
 //   node admin.mjs approve <id>          → publish a condolence (id or first 8+ characters)
 //   node admin.mjs reject <id>           → hide a condolence
 //   node admin.mjs export <form> [file]  → CSV export of one form's submissions
+//   node admin.mjs report                → print the daily report (the same email Cloudflare sends each morning)
 //   node admin.mjs purge                 → delete data past its retention date (run daily)
 import { writeFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { openStore } from "./db/sqlite-node.mjs";
 import { FORMS } from "./forms.mjs";
+import { formatDailyReport } from "./report.mjs";
+import config from "./config.json" with { type: "json" };
 
 const store = openStore();
 const [cmd, arg, out] = process.argv.slice(2);
@@ -58,10 +61,15 @@ switch (cmd) {
     db.close();
     break;
   }
+  case "report": {
+    const r = formatDailyReport(await store.dailyReport(), { siteName: config.shortName });
+    console.log(`Subject: ${r.subject}\n\n${r.body}`); // visitor fields are already cleaned in report.mjs
+    break;
+  }
   case "purge":
     console.log(await store.purge());
     break;
   default:
-    console.log("Usage: node admin.mjs <queue|pending|approve <id>|reject <id>|export <form> [file]|purge>");
+    console.log("Usage: node admin.mjs <queue|pending|approve <id>|reject <id>|export <form> [file]|report|purge>");
 }
 store.close();

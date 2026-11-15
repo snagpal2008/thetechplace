@@ -83,3 +83,25 @@ test("rate limit: 10 posts per 10 minutes per key, then blocked; other keys unaf
   assert.equal(await s.rateLimited("a", {}, new Date(t.getTime() + 11 * 60_000)), false); // window passed
   s.close();
 });
+
+test("daily report: counts, open requests with overdue flags, no free text, control chars removed", async () => {
+  const { formatDailyReport } = await import("../report.mjs");
+  const s = openStore(":memory:");
+  const now = new Date("2026-03-10T07:05:00Z");
+  await s.save("callback", FORMS.callback, { name: "Ann\u001b[31m", phone: "087 111 2222", reason: "death", message: "SECRET NOTE", consent: "yes" }, new Date("2026-03-10T05:00:00Z"));
+  await s.save("quote", FORMS.quote, { name: "Bob", email: "b@x.ie" }, new Date("2026-03-10T06:30:00Z"));
+  await s.save("quote", FORMS.quote, { name: "Old", email: "o@x.ie" }, new Date("2026-03-01T06:30:00Z")); // outside 24 h
+  await s.save("condolence", FORMS.condolence, { notice: "n", name: "C", email: "c@x.ie", message: "m" }, new Date("2026-03-10T06:00:00Z"));
+  const r = formatDailyReport(await s.dailyReport(now), { siteName: "Test Funerals", now });
+  assert.match(r.subject, /⚠ 2 overdue/);                       // the call-back (15 min) and the 9-day-old quote (24 h)
+  assert.match(r.body, /New in the last 24 hours: 2 forms \+ 1 condolence/);
+  assert.match(r.body, /Urgent call-back request: 1/);
+  assert.match(r.body, /Still waiting for a reply: 3 {2}\(⚠ 2 OVERDUE\)/);
+  assert.match(r.body, /Ann \[31m {2}087 111 2222/);              // escape char stripped, phone kept
+  assert.doesNotMatch(r.body, /SECRET NOTE/);                      // free text never in the email
+  assert.match(r.body, /waiting for approval: 1/);
+  const empty = formatDailyReport(await openStore(":memory:").dailyReport(now), { siteName: "T", now });
+  assert.match(empty.body, /Nothing outstanding/);
+  assert.equal(empty.subject, "T daily report: 0 new, 0 open");
+  s.close();
+});
