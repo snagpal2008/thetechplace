@@ -38,6 +38,15 @@ Every form except condolences sends an email to **snagpal2008@gmail.com** throug
 - Set the script's URL (including `?key=…`) as the Pages secret `ALERT_WEBHOOK_URL`.
 - Tip: in the Gmail app, give the "Website alerts" sender its own notification sound, so urgent forms are heard at night.
 
+## Deploying from GitHub Actions (recommended)
+
+`.github/workflows/deploy-cloudflare.yml` deploys the site on every push to `master`: it runs the tests, builds, updates the D1 tables (safe to repeat) and runs `wrangler deploy`. It needs two **repository secrets** in `snagpal2008/thetechplace` (*Settings → Secrets and variables → Actions*), the same values as in the `dilis-portal` repo:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Every run has a readable log under **Actions**. If Cloudflare's own Git build (*Worker → Settings → Build*) keeps failing instantly, disconnect it there so it stops adding red ✗ marks. The GitHub Actions deploy replaces it.
+
 ## Daily report by email
 
 Every morning at **07:05 UTC** (7:05 am Irish winter time, 8:05 am summer time) the Worker emails a report to the same Gmail address as the alerts:

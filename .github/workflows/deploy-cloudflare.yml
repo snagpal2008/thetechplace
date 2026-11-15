@@ -1,0 +1,75 @@
+name: Deploy funeral website to Cloudflare
+
+# Deploys site/ to the Cloudflare Worker "thetechplace" on every push to master.
+# Needs two repository secrets (the same values as in the dilis-portal repo):
+#   CLOUDFLARE_API_TOKEN   (template "Edit Cloudflare Workers" + Account · D1 · Edit)
+#   CLOUDFLARE_ACCOUNT_ID
+# Until both exist the job skips with a warning instead of failing.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-funeral-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - name: Check Cloudflare secrets
+        id: preflight
+        working-directory: .
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::warning::Skipping deploy: add repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.preflight.outputs.ready == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.preflight.outputs.ready == 'true'
+        with:
+          node-version: 22
+
+      - name: Test
+        if: steps.preflight.outputs.ready == 'true'
+        run: npm test
+
+      - name: Build pages
+        if: steps.preflight.outputs.ready == 'true'
+        run: node build.mjs
+
+      # Every statement in schema.sql is CREATE ... IF NOT EXISTS, so this is safe to repeat.
+      - name: Update database tables
+        if: steps.preflight.outputs.ready == 'true'
+        run: npx --yes wrangler@4.20.0 d1 execute funeral-db --remote --file=db/schema.sql
+
+      - name: Deploy Worker
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4.20.0 deploy 2>&1 | tee deploy.log
+
+      - name: Summary
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          {
+            echo "## Funeral website deployed"
+            echo ""
+            echo "- Site: ${URL:-see the Worker in the Cloudflare dashboard}"
+            echo "- Daily report: $(grep -oE 'schedule: .*' deploy.log | head -1 || echo 'see Worker → Settings → Trigger events')"
+          } >> "$GITHUB_STEP_SUMMARY"
